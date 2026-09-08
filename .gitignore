@@ -27,7 +27,6 @@ start-dev.sh
 .env.test.local
 .env.production.local
 .vscode/
-/backend/code/arduino/embedded-code/.vscode
 
 npm-debug.log*
 yarn-debug.log*
