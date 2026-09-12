@@ -17,8 +17,10 @@ class ArduinoController
         ArduinoController(int redLedPin);
         Led& getRedLed();
         OnboardLed& getOnBoardLed();
+        void process();
+        //Result pendingResults; // stores results from functions that need sending back to server
     
     private:
-        Led redLed;
-        OnboardLed onboardLed;
+        Led _redLed;
+        OnboardLed _onboardLed;
 };
