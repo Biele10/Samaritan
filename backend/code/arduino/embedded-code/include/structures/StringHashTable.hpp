@@ -7,6 +7,5 @@
 class StringHashTable : public HashTable<String, String>
 {
     private:
-
-        size_t hash(const String& key) const override;
+        size_t _hash(const String& key) const override;
 };

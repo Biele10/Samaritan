@@ -8,7 +8,6 @@ template<typename K, typename V>
 class HashTable
 {
     private:
-
         struct entry
         {
             K key;
@@ -16,15 +15,14 @@ class HashTable
             entry* nextEntry;
         };
 
-        entry** initializeHashTable(size_t size) const;
-        entry* createEntry(const K& key, const V& value);
+        entry** _initializeHashTable(size_t size) const;
+        entry* _createEntry(const K& key, const V& value);
 
     protected:
 
-        virtual size_t hash(const K& key) const = 0; // each class must implement this itself, hash functions differ depending on datatype
+        virtual size_t _hash(const K& key) const = 0; // each class must implement this itself, hash functions differ depending on datatype
 
     public:
-
         entry** ht;
         const size_t size;
 
@@ -44,7 +42,7 @@ class HashTable
  */
 template<typename K, typename V>
 HashTable<K, V>::HashTable(size_t size)
-    : ht(initializeHashTable(size)), size(size)
+    : ht(_initializeHashTable(size)), size(size)
 {}
 
 
@@ -53,7 +51,7 @@ HashTable<K, V>::HashTable(size_t size)
  */
 template<typename K, typename V>
 typename HashTable<K, V>::entry**
-HashTable<K, V>::initializeHashTable(size_t size) const
+HashTable<K, V>::_initializeHashTable(size_t size) const
 {
     return new entry*[size](); // safely creates fixed array and initializes all values to nullptr
 }
@@ -61,7 +59,7 @@ HashTable<K, V>::initializeHashTable(size_t size) const
 
 template<typename K, typename V>
 typename HashTable<K, V>::entry*
-HashTable<K, V>::createEntry(const K& key, const V& value)
+HashTable<K, V>::_createEntry(const K& key, const V& value)
 {
     entry* e = new entry;
 
@@ -105,7 +103,7 @@ void HashTable<K, V>::insert(const K& key, const V& value)
 
     if (this->ht[hashKey] == nullptr) // no other key stored here
     {
-        this->ht[hashKey] = createEntry(key, value);
+        this->ht[hashKey] = _createEntry(key, value);
         return;
     }
 
@@ -122,7 +120,7 @@ void HashTable<K, V>::insert(const K& key, const V& value)
 
         if (next->nextEntry == nullptr)
         {
-            next->nextEntry = createEntry(key, value); // assigns the newly created entry
+            next->nextEntry = _createEntry(key, value); // assigns the newly created entry
             return;
         }
 

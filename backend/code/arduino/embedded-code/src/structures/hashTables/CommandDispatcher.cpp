@@ -4,7 +4,7 @@
 #include "packet/Packet.hpp"
 
 template<typename T>
-Result CommandDispatcher::invokeEndpoint(void* object, Result (T::*method)(uint16_t*, uint8_t), uint16_t* args, uint8_t count)
+Result CommandDispatcher::_invokeEndpoint(void* object, Result (T::*method)(uint16_t*, uint8_t), uint16_t* args, uint8_t count)
 {
     T* typedObject = static_cast<T*>(object); // we convert using the object pointer stored in endpoint struct to the correct type, then we can call the function
 
@@ -40,7 +40,7 @@ void CommandDispatcher::setup(ArduinoController& ac)
  * Function that hashes the key to generate the key/values
  * place inside the hash table.
  */
-size_t CommandDispatcher::hash(const uint16_t& key) const
+size_t CommandDispatcher::_hash(const uint16_t& key) const
 {
     return key % size;
 }
