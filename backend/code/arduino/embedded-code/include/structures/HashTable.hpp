@@ -99,7 +99,7 @@ HashTable<K, V>::~HashTable()
 template<typename K, typename V>
 void HashTable<K, V>::insert(const K& key, const V& value)
 {
-    const size_t hashKey = this->hash(key);
+    const size_t hashKey = this->_hash(key);
 
     if (this->ht[hashKey] == nullptr) // no other key stored here
     {
@@ -133,7 +133,7 @@ template<typename K, typename V>
 typename HashTable<K, V>::entry*
 HashTable<K, V>::get(const K& key)
 {
-    const size_t hashKey = this->hash(key);
+    const size_t hashKey = this->_hash(key);
 
     entry* fetchedEntry = this->ht[hashKey];
 

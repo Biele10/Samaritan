@@ -1,288 +1,136 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# ==========================================
-# Samaritan - Stage 2 Configuration
-# ==========================================
-
-set -euo pipefail
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+set -e
 
 info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    echo "[INFO] $1"
 }
 
 success() {
-    echo -e "${GREEN}[ OK ]${NC} $1"
+    echo "[ OK ] $1"
 }
 
 warning() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    echo "[WARN] $1"
 }
 
 die() {
-    echo -e "${RED}[FAIL]${NC} $1" >&2
+    echo "[ERROR] $1"
     exit 1
 }
 
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
+if [ "$EUID" -ne 0 ]; then
+    die "This script must be run as root. Use sudo."
+fi
 
-# ==========================================
-# Check Linux
-# ==========================================
+if [ ! -f /etc/os-release ]; then
+    die "Unable to determine operating system."
+fi
 
-info "Checking operating system..."
+source /etc/os-release
 
-[[ "$(uname -s)" == "Linux" ]] ||
-    die "This script must be run on Linux."
+if [ "$ID" != "ubuntu" ]; then
+    warning "This installer was designed for Ubuntu."
+    warning "Detected operating system: $PRETTY_NAME"
+fi
 
-success "Linux detected."
-
-# ==========================================
-# Check root
-# ==========================================
-
-info "Checking root privileges..."
-
-[[ "${EUID}" -eq 0 ]] ||
-    die "Please run this script with sudo."
-
-success "Running as root."
-
-# ==========================================
-# Check deployment user
-# ==========================================
-
-info "Checking for ubuntu user..."
-
-id ubuntu >/dev/null 2>&1 ||
-    die "User 'ubuntu' does not exist."
-
-success "User 'ubuntu' found."
-
-# ==========================================
-# Check required tools
-# ==========================================
-
-info "Checking required system tools..."
-
-REQUIRED_COMMANDS=(
-    systemctl
-    apache2ctl
-)
-
-for command in "${REQUIRED_COMMANDS[@]}"; do
-    command_exists "$command" ||
-        die "Required command '$command' is not available."
-done
-
-success "Required system tools are available."
-
-# ==========================================
-# Check configuration files
-# ==========================================
+if ! id ubuntu >/dev/null 2>&1; then
+    die "Required user 'ubuntu' does not exist."
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SAMARITAN_ROOT="/var/www/Samaritan"
+DAEMON_DIR="$SAMARITAN_ROOT/daemon"
+DAEMON_BUILD_DIR="$DAEMON_DIR/build"
+SPEECH_DIR="$SAMARITAN_ROOT/speech-service"
+SPEECH_BUILD_DIR="$SPEECH_DIR/build"
 
-SERVICE_SOURCE="${SCRIPT_DIR}/samaritan-daemon.service"
-APACHE_SOURCE="${SCRIPT_DIR}/samaritan.conf"
-
-info "Checking Samaritan configuration files..."
-
-[[ -f "${SERVICE_SOURCE}" ]] ||
-    die "Missing service file: ${SERVICE_SOURCE}"
-
-[[ -f "${APACHE_SOURCE}" ]] ||
-    die "Missing Apache configuration: ${APACHE_SOURCE}"
-
-success "Samaritan configuration files found."
-
-# ==========================================
-# Create Samaritan directories
-# ==========================================
-
-info "Creating Samaritan directories..."
-
-mkdir -p /var/www/Samaritan
-mkdir -p /var/log/apache2
-
-chown ubuntu:ubuntu /var/www/Samaritan
-
-success "Samaritan directories prepared."
-
-# ==========================================
-# Configure Samaritan group
-# ==========================================
+DAEMON_SERVICE_SOURCE="$SCRIPT_DIR/samaritan-daemon.service"
+DAEMON_SERVICE_DEST="/etc/systemd/system/samaritan-daemon.service"
+SPEECH_SERVICE_SOURCE="$SCRIPT_DIR/samaritan-speech-service.service"
+SPEECH_SERVICE_DEST="/etc/systemd/system/samaritan-speech-service.service"
+APACHE_SOURCE="$SCRIPT_DIR/samaritan.conf"
+APACHE_DEST="/etc/apache2/sites-available/samaritan.conf"
 
 info "Configuring Samaritan group..."
 
 if ! getent group samaritan >/dev/null 2>&1; then
     groupadd samaritan
-    info "Created 'samaritan' group."
+    success "Created samaritan group."
 else
-    info "'samaritan' group already exists."
+    success "samaritan group already exists."
 fi
 
 usermod -aG samaritan ubuntu
 usermod -aG samaritan www-data
+success "Configured Samaritan group membership."
 
-success "Samaritan group configured."
+info "Creating Samaritan directories..."
 
-# ==========================================
-# Install systemd service
-# ==========================================
+mkdir -p "$SAMARITAN_ROOT"
+mkdir -p "$DAEMON_BUILD_DIR"
+mkdir -p "$SPEECH_BUILD_DIR"
+chown -R ubuntu:ubuntu "$SAMARITAN_ROOT"
 
-info "Installing Samaritan systemd service..."
+success "Samaritan directories ready."
 
-install -m 0644 \
-    "${SERVICE_SOURCE}" \
-    /etc/systemd/system/samaritan-daemon.service
+info "Installing Samaritan daemon service..."
 
-systemctl daemon-reload
+if [ ! -f "$DAEMON_SERVICE_SOURCE" ]; then
+    die "Daemon service file not found: $DAEMON_SERVICE_SOURCE"
+fi
 
-success "Samaritan systemd service installed."
+install -o root -g root -m 644 "$DAEMON_SERVICE_SOURCE" "$DAEMON_SERVICE_DEST"
+success "Daemon service installed."
 
-# ==========================================
-# Enable daemon
-# ==========================================
+info "Installing Samaritan speech service..."
 
-info "Enabling Samaritan daemon..."
+if [ ! -f "$SPEECH_SERVICE_SOURCE" ]; then
+    die "Speech service file not found: $SPEECH_SERVICE_SOURCE"
+fi
 
-systemctl enable samaritan-daemon
+install -o root -g root -m 644 "$SPEECH_SERVICE_SOURCE" "$SPEECH_SERVICE_DEST"
+success "Speech service installed."
 
-success "Samaritan daemon enabled."
+info "Configuring Apache..."
 
-# ==========================================
-# Install Apache configuration
-# ==========================================
+if [ ! -f "$APACHE_SOURCE" ]; then
+    die "Apache configuration file not found: $APACHE_SOURCE"
+fi
 
-info "Installing Samaritan Apache configuration..."
+mkdir -p /var/log/apache2
+install -o root -g root -m 644 "$APACHE_SOURCE" "$APACHE_DEST"
 
-install -m 0644 \
-    "${APACHE_SOURCE}" \
-    /etc/apache2/sites-available/samaritan.conf
+a2enmod rewrite >/dev/null
+a2ensite samaritan.conf >/dev/null
+a2dissite 000-default.conf >/dev/null 2>&1 || true
+
+if ! apache2ctl configtest; then
+    die "Apache configuration test failed."
+fi
 
 success "Apache configuration installed."
 
-# ==========================================
-# Enable Apache rewrite module
-# ==========================================
+info "Reloading systemd..."
+systemctl daemon-reload
+success "systemd reloaded."
 
-info "Enabling Apache rewrite module..."
-
-a2enmod rewrite
-
-success "Apache rewrite module enabled."
-
-# ==========================================
-# Enable Samaritan site
-# ==========================================
-
-info "Enabling Samaritan Apache site..."
-
-a2ensite samaritan.conf
-
-success "Samaritan Apache site enabled."
-
-# ==========================================
-# Disable default Apache site
-# ==========================================
-
-if [[ -e /etc/apache2/sites-enabled/000-default.conf ]]; then
-    info "Disabling default Apache site..."
-
-    a2dissite 000-default.conf
-
-    success "Default Apache site disabled."
-else
-    info "Default Apache site is not enabled."
-fi
-
-# ==========================================
-# Validate Apache configuration
-# ==========================================
-
-info "Validating Apache configuration..."
-
-apache2ctl configtest
-
-success "Apache configuration is valid."
-
-# ==========================================
-# Enable Apache
-# ==========================================
-
-info "Enabling Apache..."
-
-systemctl enable apache2
-
-success "Apache enabled."
-
-# ==========================================
-# Restart Apache
-# ==========================================
-
-info "Restarting Apache..."
-
-systemctl restart apache2
-
-success "Apache is running."
-
-# ==========================================
-# Daemon status
-# ==========================================
-
-if [[ -x /var/www/Samaritan/daemon/build/samaritan-daemon ]]; then
-    warning "Samaritan daemon executable already exists."
-
-    info "Starting Samaritan daemon..."
-
-    systemctl restart samaritan-daemon
-
-    success "Samaritan daemon started."
-else
-    info "Samaritan daemon executable does not exist yet."
-    info "The daemon will be compiled during the first deployment."
-fi
-
-# ==========================================
-# Summary
-# ==========================================
+info "Enabling Samaritan services..."
+systemctl enable samaritan-daemon
+systemctl enable samaritan-speech-service
+success "Samaritan services enabled."
 
 echo
-echo "=============================================="
-echo " Samaritan - Stage 2 Configuration Complete"
-echo "=============================================="
+echo "============================================================"
+echo " Samaritan Stage 2 installation complete"
+echo "============================================================"
 echo
-echo "Configured:"
-echo "  - Apache"
-echo "  - Apache rewrite module"
-echo "  - Samaritan Apache site"
-echo "  - Samaritan systemd service"
-echo "  - Samaritan runtime directory"
-echo "  - Samaritan communication group"
+echo "Samaritan root:"
+echo "  $SAMARITAN_ROOT"
 echo
-echo "Apache:"
-echo "  DocumentRoot:"
-echo "    /var/www/Samaritan/public_html"
+echo "Services configured:"
+echo "  samaritan-daemon"
+echo "  samaritan-speech-service"
+echo "  apache2"
 echo
-echo "Daemon:"
-echo "  Service:"
-echo "    samaritan-daemon"
-echo
-echo "  Executable:"
-echo "    /var/www/Samaritan/daemon/build/samaritan-daemon"
-echo
-echo "  Socket:"
-echo "    /run/samaritan/samaritan.sock"
-echo
-echo "The daemon will be started automatically"
-echo "after its executable is created by deployment."
-echo
-echo "=============================================="
+echo "============================================================"
