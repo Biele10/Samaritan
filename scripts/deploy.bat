@@ -1,10 +1,6 @@
 @echo off
 setlocal
 
-REM ==========================================
-REM Samaritan - Full Deployment
-REM ==========================================
-
 set "ROOT=%~dp0"
 
 echo.
@@ -35,13 +31,11 @@ if errorlevel 1 (
 )
 
 echo.
-
 echo ==========================================
 echo.
 echo [1;32mSamaritan deployment complete.[0m
 echo.
 echo ==========================================
-
 echo.
 
 endlocal

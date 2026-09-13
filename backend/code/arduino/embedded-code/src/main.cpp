@@ -39,6 +39,4 @@ void loop()
       }
     }
   }
-
-  ac.process(); // handles code that must run every event loop
 }
