@@ -88,6 +88,7 @@ apt-get install -y \
     alsa-utils \
     libatomic1 \
     avrdude \
+    libcurl4-openssl-dev \
     apache2 \
     php-cli \
     php-curl \

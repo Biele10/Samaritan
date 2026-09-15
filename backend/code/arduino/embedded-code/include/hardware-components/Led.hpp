@@ -7,6 +7,7 @@ class Led
     public:
         Led(int pinNumber, bool initialState = false);
         Result power(uint16_t* args, uint8_t count);
+        Result flash(uint16_t* args, uint8_t count);
 
     private:
         int _pin;

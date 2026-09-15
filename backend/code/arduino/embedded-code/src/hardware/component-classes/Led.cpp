@@ -57,3 +57,30 @@ Result Led::_off()
     this->_state = !(this->_state);
     return Result::Success("Turned LED off.");
 }
+
+/**
+ * Function that flashes the LED for a given period of time.
+ * 
+ * args:
+ * [0] - Time in ms to flash LED for.
+ */
+Result Led::flash(uint16_t* args, uint8_t count)
+{
+    uint16_t flashTime = 2000; // 2 seconds default
+    if (count != 0)
+    {
+        flashTime = args[0];
+    }
+
+    if ((this->_state) == false)
+    {
+        this->_state = true;
+        digitalWrite(_pin, HIGH);
+    }
+
+    delay(flashTime);                              // TEMP THIS IS ONYL FOR TESTING DO NOT ACTUALLY USE THIS THIS BLOCKS WHOLE EVENT LOOP
+    digitalWrite(_pin, LOW);
+    
+    this->_state = false;
+    return Result::Success("Flashed the LED");
+}

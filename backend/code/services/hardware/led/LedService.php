@@ -16,4 +16,34 @@ Class LedService extends \Samaritan\services\hardware\HardwareService
 
         return ['success' => true, 'data' => ['message' => 'This worked!']];
     }
+
+    public function yes() : array
+    {
+        $command = \Samaritan\arduino\Commands::GREEN_LED_FLASH;
+        $params = [3000]; // 3 seconds to flash
+
+        $result = $this->sendCommand($command, $params);
+
+        if ($result['success'] !== true)
+        {
+            return ['success' => false, 'data' => ['message' => 'Failed to send command.']];
+        }
+
+        return ['success' => true, 'data' => ['message' => 'This worked!']];
+    }
+
+    public function no() : array
+    {
+        $command = \Samaritan\arduino\Commands::RED_LED_FLASH;
+        $params = [3000]; // 3 seconds to flash
+
+        $result = $this->sendCommand($command, $params);
+
+        if ($result['success'] !== true)
+        {
+            return ['success' => false, 'data' => ['message' => 'Failed to send command.']];
+        }
+
+        return ['success' => true, 'data' => ['message' => 'This worked!']];
+    }
 }

@@ -29,3 +29,5 @@ struct TypedEndpoint : Endpoint
 
 constexpr uint16_t RED_LED_POWER = 0x0003;
 constexpr uint16_t ONBOARD_LED_POWER = 0x0004;
+constexpr uint16_t RED_LED_FLASH = 0x0005;
+constexpr uint16_t GREEN_LED_FLASH = 0x0006;

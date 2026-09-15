@@ -65,9 +65,33 @@ if not exist "%LOCAL_BUILD%\firmware\firmware.hex" (
 
 echo [ OK ] Arduino firmware found.
 
+if not exist "%LOCAL_BUILD%\speech-service" (
+    echo.
+    echo [FAIL] Speech service was not found.
+    echo.
+    echo Run create-build.bat first.
+    exit /b 1
+)
+
 if not exist "%LOCAL_BUILD%\speech-service\code\speech.cpp" (
     echo.
-    echo [FAIL] Speech service source was not found.
+    echo [FAIL] speech.cpp was not found.
+    echo.
+    echo Run create-build.bat first.
+    exit /b 1
+)
+
+if not exist "%LOCAL_BUILD%\speech-service\code\processTranscription.cpp" (
+    echo.
+    echo [FAIL] processTranscription.cpp was not found.
+    echo.
+    echo Run create-build.bat first.
+    exit /b 1
+)
+
+if not exist "%LOCAL_BUILD%\speech-service\code\config\config.hpp" (
+    echo.
+    echo [FAIL] Speech service config.hpp was not found.
     echo.
     echo Run create-build.bat first.
     exit /b 1
@@ -110,15 +134,15 @@ echo.
 
 set "SPEECH_CONFIGURED=0"
 
-ssh -p "%PI_PORT%" "%PI_HOST%" "if [ -f %PI_WEB%/speech-service/code/config/config.hpp ]; then if grep -q 'ALSA_INPUT_NAME = \"{{ALSA_INPUT_NAME}}\"' %PI_WEB%/speech-service/code/config/config.hpp; then exit 1; fi; if grep -q 'VOSK_MODEL_LOCATION = \"{{VOSK_MODEL_LOCATION}}\"' %PI_WEB%/speech-service/code/config/config.hpp; then exit 1; fi; if grep -q 'ALSA_INPUT_NAME' %PI_WEB%/speech-service/code/config/config.hpp && grep -q 'VOSK_MODEL_LOCATION' %PI_WEB%/speech-service/code/config/config.hpp; then exit 0; fi; fi; exit 1"
+ssh -p "%PI_PORT%" "%PI_HOST%" "if [ -f %PI_WEB%/speech-service/code/config/config.hpp ] && grep -q 'ALSA_INPUT_NAME' %PI_WEB%/speech-service/code/config/config.hpp && grep -q 'VOSK_MODEL_LOCATION' %PI_WEB%/speech-service/code/config/config.hpp && grep -q 'WAKE_WORD' %PI_WEB%/speech-service/code/config/config.hpp && grep -q 'PARTIAL_FIRST_LETTER_INDEX' %PI_WEB%/speech-service/code/config/config.hpp && grep -q 'END_OF_PARTIAL' %PI_WEB%/speech-service/code/config/config.hpp && grep -q 'SPEECH_CHAR_CAP' %PI_WEB%/speech-service/code/config/config.hpp && grep -q 'enum class SpeechState' %PI_WEB%/speech-service/code/config/config.hpp && ! grep -q '{{ALSA_INPUT_NAME}}' %PI_WEB%/speech-service/code/config/config.hpp && ! grep -q '{{VOSK_MODEL_LOCATION}}' %PI_WEB%/speech-service/code/config/config.hpp; then exit 0; else exit 1; fi"
 
 if not errorlevel 1 (
     set "SPEECH_CONFIGURED=1"
-    echo [ OK ] Existing speech configuration found.
-    echo [INFO] Existing ALSA_INPUT_NAME will be preserved.
+    echo [ OK ] Complete existing speech configuration found.
+    echo [INFO] Existing machine-specific speech values will be preserved.
 ) else (
-    echo [INFO] No valid speech configuration found.
-    echo [INFO] Microphone detection will be performed.
+    echo [INFO] Existing speech configuration is missing or incomplete.
+    echo [INFO] Speech configuration will be generated from the complete build template.
 )
 
 if "!CONFIGURED!"=="1" (
@@ -168,6 +192,7 @@ if errorlevel 1 (
 )
 
 echo [ OK ] Samaritan services stopped.
+
 echo.
 echo [INFO] Replacing deployment directory...
 
@@ -400,28 +425,48 @@ if "!SPEECH_CONFIGURED!"=="0" (
 
     echo.
     echo ==========================================
-    echo Generating speech configuration...
+    echo Configuring speech service...
     echo ==========================================
     echo.
 
     set "SPEECH_CONFIG_FILE=%TEMP%\samaritan-speech-config.hpp"
+    set "SPEECH_TEMPLATE=%LOCAL_BUILD%\speech-service\code\config\config.hpp"
 
-    (
-        echo #pragma once
+    if not exist "!SPEECH_TEMPLATE!" (
         echo.
-        echo constexpr const char* ALSA_INPUT_NAME = "!MIC_NAME!";
+        echo [FAIL] Speech configuration template was not found.
         echo.
-        echo constexpr const char* VOSK_MODEL_LOCATION = "/opt/samaritan/vosk-model-small-en-us-0.15";
-    ) > "!SPEECH_CONFIG_FILE!"
-
-    if errorlevel 1 (
-        echo.
-        echo [FAIL] Failed to generate temporary speech config.hpp.
+        echo Expected:
+        echo !SPEECH_TEMPLATE!
         exit /b 1
     )
 
-    echo [ OK ] Temporary speech config.hpp generated.
-    echo [INFO] Uploading speech config.hpp...
+    echo [INFO] Copying complete speech configuration template...
+
+    copy /Y "!SPEECH_TEMPLATE!" "!SPEECH_CONFIG_FILE!" >nul
+
+    if errorlevel 1 (
+        echo.
+        echo [FAIL] Failed to copy speech configuration template.
+        exit /b 1
+    )
+
+    echo [ OK ] Complete speech configuration template copied.
+
+    echo [INFO] Applying machine-specific speech configuration...
+
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "$path = [System.IO.Path]::GetFullPath('!SPEECH_CONFIG_FILE!'); $content = [System.IO.File]::ReadAllText($path); $content = $content.Replace('{{ALSA_INPUT_NAME}}', '!MIC_NAME!').Replace('{{VOSK_MODEL_LOCATION}}', '/opt/samaritan/vosk-model-small-en-us-0.15'); [System.IO.File]::WriteAllText($path, $content)"
+
+    if errorlevel 1 (
+        echo.
+        echo [FAIL] Failed to configure speech config.hpp.
+        del /q "!SPEECH_CONFIG_FILE!" >nul 2>&1
+        exit /b 1
+    )
+
+    echo [ OK ] Speech configuration values applied.
+
+    echo [INFO] Uploading complete speech config.hpp...
 
     scp -P "%PI_PORT%" "!SPEECH_CONFIG_FILE!" "%PI_HOST%:/home/ubuntu/samaritan-speech-config.hpp"
 
@@ -433,6 +478,7 @@ if "!SPEECH_CONFIGURED!"=="0" (
     )
 
     echo [ OK ] Speech config.hpp uploaded.
+
     echo [INFO] Installing speech config.hpp...
 
     ssh -p "%PI_PORT%" "%PI_HOST%" "sudo mkdir -p %PI_WEB%/speech-service/code/config && sudo mv /home/ubuntu/samaritan-speech-config.hpp %PI_WEB%/speech-service/code/config/config.hpp"
@@ -446,7 +492,7 @@ if "!SPEECH_CONFIGURED!"=="0" (
 
     del /q "!SPEECH_CONFIG_FILE!" >nul 2>&1
 
-    echo [ OK ] Speech config.hpp installed.
+    echo [ OK ] Complete speech config.hpp installed.
 )
 
 echo.
@@ -488,7 +534,7 @@ echo Compiling speech recognition service...
 echo ==========================================
 echo.
 
-ssh -p "%PI_PORT%" "%PI_HOST%" "cd %PI_WEB%/speech-service && sudo mkdir -p build && sudo g++ -std=c++17 code/speech.cpp -I/opt/samaritan/vosk-linux-aarch64-0.3.45 -L/opt/samaritan/vosk-linux-aarch64-0.3.45 -Wl,-rpath,/opt/samaritan/vosk-linux-aarch64-0.3.45 -lvosk -lasound -o build/samaritan-speech-service"
+ssh -p "%PI_PORT%" "%PI_HOST%" "cd %PI_WEB%/speech-service && sudo mkdir -p build && sudo g++ -std=c++17 code/speech.cpp code/processTranscription.cpp -I/opt/samaritan/vosk-linux-aarch64-0.3.45 -L/opt/samaritan/vosk-linux-aarch64-0.3.45 -Wl,-rpath,/opt/samaritan/vosk-linux-aarch64-0.3.45 -lvosk -lasound -lcurl -pthread -o build/samaritan-speech-service"
 
 if errorlevel 1 (
     echo.

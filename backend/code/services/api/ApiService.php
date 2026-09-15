@@ -1,6 +1,6 @@
 <?php
 
-namespace Samaritan\service;
+namespace Samaritan\services\api;
 
 // this will deal with authentication/middleware stuff
 Class ApiService extends \Samaritan\services\Service
