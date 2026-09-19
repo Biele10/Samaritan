@@ -1,10 +1,11 @@
 #include <Arduino.h>
+#include "hardware-components/Hardware.hpp"
 #include "hardware-components/Led.hpp"
 #include "output/Result.hpp"
 #include "structures/HashTable.hpp"
 #include "config/config.hpp"
 
-Led::Led(int pinNumber, bool initialState) : _pin(pinNumber), _state(initialState) {};
+Led::Led(const uint8_t arduinoPin, const uint8_t hcPin, bool state) : Hardware(arduinoPin, hcPin, state) {};
 
 /**
  * Function that turns the LED on or off, this
@@ -13,18 +14,8 @@ Led::Led(int pinNumber, bool initialState) : _pin(pinNumber), _state(initialStat
  */
 Result Led::power(uint16_t* args, uint8_t count)
 {
-    if ((this->_state) == false)
-    {
-        digitalWrite(_pin, HIGH);
-    }
-
-    else if ((this->_state) == true)
-    {
-        digitalWrite(_pin, LOW);
-    }
-
     this->_state = !(this->_state);
-    return Result::Success("Changed state of the LED");
+    Hardware::power(); // call parent function to commit changes, component level just sets state
 }
 
 // The on and off functions are used internally for specific behaviour
@@ -35,11 +26,7 @@ Result Led::power(uint16_t* args, uint8_t count)
  */
 Result Led::_on()
 {
-    if ((this->_state) == false)             // these state checks are done to avoid unecessary digitalWrites
-    {
-        digitalWrite(_pin, HIGH);
-    }
-
+    digitalWrite(this->_arduinoPin, HIGH);
     this->_state = !(this->_state);
     return Result::Success("Turned LED on.");
 }
@@ -49,11 +36,7 @@ Result Led::_on()
  */
 Result Led::_off()
 {
-    if ((this->_state) == true)
-    {
-        digitalWrite(_pin, LOW);
-    }
-
+    digitalWrite(_pin, LOW);
     this->_state = !(this->_state);
     return Result::Success("Turned LED off.");
 }
@@ -83,4 +66,17 @@ Result Led::flash(uint16_t* args, uint8_t count)
     
     this->_state = false;
     return Result::Success("Flashed the LED");
+}
+
+/**
+ * Updates all physical aspects of the LED.
+ * This is called at the end of a process loop.
+ */
+void Led::update()
+{
+    if (this->_)
+    if (this->_state == true)
+    {
+        
+    }
 }

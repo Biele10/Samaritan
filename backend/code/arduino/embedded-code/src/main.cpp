@@ -13,7 +13,7 @@ uint8_t buffer[BUFFER_SIZE];
 uint16_t bufferIndex = 0;
 bool packetStarted = false;
 
-ArduinoController ac(Config::RED_LED_PIN);
+ArduinoController ac(Config::RED_LED_PIN, Config::HC_DATA_PIN, Config::HC_CLOCK_PIN, Config::HC_LATCH_PIN, Config::HC_MAX_INDEX);
 CommandDispatcher dispatcher;
 
 void setup()
@@ -29,7 +29,7 @@ void loop()
   while (Serial.available() > 0) // listening for server requests
   {
     uint8_t byte = Serial.read();
-    if(processByte(byte, buffer, bufferIndex, packetStarted)) // returns true once whole packet is complete
+    if (processByte(byte, buffer, bufferIndex, packetStarted)) // returns true once whole packet is complete
     {
       ParsedPacket* parsedPacket = parsePacket(buffer);
       if (parsedPacket != nullptr)
@@ -38,5 +38,8 @@ void loop()
         cleanUp(parsedPacket); // frees up memory
       }
     }
+
+    ac.process(); // runs code that need to be run every event loop
+    ac.update(); // any state changes we have made can now be updated at the end of the event loop
   }
 }
