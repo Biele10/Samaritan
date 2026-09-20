@@ -13,4 +13,5 @@
 
 # GitHub language statistics
 *.bat linguist-vendored
+*.sh linguist-vendored
 *.cmd linguist-vendored
