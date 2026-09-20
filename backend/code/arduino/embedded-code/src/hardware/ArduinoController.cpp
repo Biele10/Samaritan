@@ -31,7 +31,6 @@ void ArduinoController::setupHardware()
   pinMode(Config::HC_LATCH_PIN, OUTPUT);
 }
 
-
 Led& ArduinoController::getRedLed()
 {
   return this->_redLed;

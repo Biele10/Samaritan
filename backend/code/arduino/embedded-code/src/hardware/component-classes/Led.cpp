@@ -8,37 +8,17 @@
 Led::Led(const uint8_t arduinoPin, const uint8_t hcPin, bool state) : Hardware(arduinoPin, hcPin, state) {};
 
 /**
- * Function that turns the LED on or off, this
- * is only used via the website because the website does not
- * have a way of tracking the state of the LED.
+ * Function that turns the LED on or off.
  */
 Result Led::power(uint16_t* args, uint8_t count)
 {
-    this->_state = !(this->_state);
-    Hardware::power(); // call parent function to commit changes, component level just sets state
-}
+    bool state = !(this->getState());
+    if (count > 0 && (args[0] == 1 || args[0] == 0))
+    {
+        state = args[0];
+    }
 
-// The on and off functions are used internally for specific behaviour
-// as current state of the LED can easily be tracked.
-
-/**
- * Turns LED on.
- */
-Result Led::_on()
-{
-    digitalWrite(this->_arduinoPin, HIGH);
-    this->_state = !(this->_state);
-    return Result::Success("Turned LED on.");
-}
-
-/**
- * Turns LED off.
- */
-Result Led::_off()
-{
-    digitalWrite(_pin, LOW);
-    this->_state = !(this->_state);
-    return Result::Success("Turned LED off.");
+    Hardware::power(state);
 }
 
 /**
@@ -50,21 +30,22 @@ Result Led::_off()
 Result Led::flash(uint16_t* args, uint8_t count)
 {
     uint16_t flashTime = 2000; // 2 seconds default
+    uint8_t ardPin = this->getArduinoPin();
     if (count != 0)
     {
         flashTime = args[0];
     }
 
-    if ((this->_state) == false)
+    if ((this->getState()) == false)
     {
-        this->_state = true;
-        digitalWrite(_pin, HIGH);
+        this->setState(true);
+        digitalWrite(ardPin, HIGH);
     }
 
     delay(flashTime);                              // TEMP THIS IS ONYL FOR TESTING DO NOT ACTUALLY USE THIS THIS BLOCKS WHOLE EVENT LOOP
-    digitalWrite(_pin, LOW);
+    digitalWrite(ardPin, LOW);
     
-    this->_state = false;
+    this->setState(false);
     return Result::Success("Flashed the LED");
 }
 
@@ -74,9 +55,5 @@ Result Led::flash(uint16_t* args, uint8_t count)
  */
 void Led::update()
 {
-    if (this->_)
-    if (this->_state == true)
-    {
-        
-    }
+    Hardware::power(this->getState());
 }

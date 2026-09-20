@@ -20,8 +20,8 @@ class Hardware
         bool _isDirty; // if true, class update function will be run
         
     public:
-        virtual ~Hardware() = 0;
-        virtual void update() = 0; // must be defined
+        virtual ~Hardware();
+        virtual void update();
         void setDirty(bool state);
         void setState(bool state);
         bool getDirty();
@@ -40,7 +40,7 @@ void Hardware::setState(bool state)
     this->_state = state;
 }
 
-Hardware::~Hardware() = default; // destructor MUST be defined in child class
+Hardware::~Hardware() {}
 
 /**
  * Flips state of component.
@@ -57,21 +57,21 @@ bool Hardware::power(bool state)
 {
     if (state == false)
     {
-        digitalWrite(this->_arduinoPin, HIGH);
+        digitalWrite(this->getArduinoPin(), HIGH);
     }
 
-    else if ((this->_state) == true)
+    else if (state == true)
     {
-        digitalWrite(this->_arduinoPin, LOW);
+        digitalWrite(this->getArduinoPin(), LOW);
     }
 
-    this->_state = state;
+    this->setState(state);
     return true;
 }
 
 bool Hardware::logicPower()
 {
-    this->logicPower(!this->_state);
+    this->logicPower(!this->getState());
 }
 
 /**
@@ -92,16 +92,22 @@ void Hardware::setDirty(bool state)
     this->_isDirty = state;
 }
 
+/**
+ * Function that gets the pin currently in use,
+ * should really only be used in situations where only ONE pin is being used.
+ */
 uint8_t Hardware::getPin()
 {
-    if (this->_hcPin == NO_PIN && this->_arduinoPin != NO_PIN)
+    uint8_t arduinoPin = this->getArduinoPin();
+    uint8_t hcPin = this->getHcPin();
+    if (hcPin == NO_PIN && arduinoPin != NO_PIN)
     {
-        return this->getArduinoPin();
+        return arduinoPin;
     }
 
-    if (this->_arduinoPin == NO_PIN && this->_hcPin != NO_PIN)
+    if (arduinoPin == NO_PIN && hcPin != NO_PIN)
     {
-        return this->getHcPin();
+        return hcPin;
     }
 
     return static_cast<uint8_t>(NO_PIN);
@@ -126,3 +132,5 @@ bool Hardware::getState()
 {
     return this->_state;
 }
+
+void Hardware::update() {}
