@@ -5,7 +5,7 @@
 #include "endpoints/EndpointService.hpp"
 
 template<typename T>
-Result CommandDispatcher::_invokeEndpoint(void* object, Result (T::*method)(uint16_t*, uint8_t), uint16_t* args, uint8_t count)
+Result CommandDispatcher::_invokeEndpoint(void* object, Result (T::*method)(const uint16_t*, uint8_t), const uint16_t* args, uint8_t count)
 {
     T* typedObject = static_cast<T*>(object); // we convert using the object pointer stored in endpoint struct to the correct type, then we can call the function
 
@@ -17,7 +17,7 @@ Result CommandDispatcher::_invokeEndpoint(void* object, Result (T::*method)(uint
  * store object + handler together
  */
 template <typename T>
-void CommandDispatcher::registerEndpoint(const uint16_t command, const T& object, Result (T::*handler)(const uint16_t*, uint8_t))
+void CommandDispatcher::registerEndpoint(const uint16_t command, T& object, Result (T::*handler)(const uint16_t*, uint8_t))
 {
     Endpoint* endpoint = new TypedEndpoint<T>
     {
@@ -31,7 +31,7 @@ void CommandDispatcher::registerEndpoint(const uint16_t command, const T& object
 /**
  * This is where endpoints are mapped to binary commands.
  */
-void CommandDispatcher::setup(const EndpointService& endpoints)
+void CommandDispatcher::setup(EndpointService& endpoints)
 {
     registerEndpoint(RED_LED_POWER, endpoints, &EndpointService::redLedPower);
     registerEndpoint(ONBOARD_LED_POWER, endpoints, &EndpointService::onboardLedPower);

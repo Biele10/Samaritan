@@ -212,25 +212,29 @@ fi
 echo "[ OK ] PHP dependencies ready."
 echo
 
-echo "=========================================="
-echo "Copying backend..."
-echo "=========================================="
-echo
+echo "[INFO] Copying backend..."
 
 mkdir -p "$BUILD/backend"
 
+# Copy the backend, excluding Arduino source
 if ! rsync -a \
     --exclude="code/arduino/" \
     "$ROOT/backend/" \
     "$BUILD/backend/"; then
 
-    echo
-    echo "[FAIL] Backend copy failed."
+    echo "[ERROR] Failed to copy backend."
     exit 1
 fi
 
-echo "[ OK ] Backend copied."
-echo
+# Copy Arduino PHP code, excluding PlatformIO firmware source
+if ! rsync -a \
+    --exclude="embedded-code/" \
+    "$ROOT/backend/code/arduino/" \
+    "$BUILD/backend/code/arduino/"; then
+
+    echo "[ERROR] Failed to copy Arduino PHP code."
+    exit 1
+fi
 
 echo "=========================================="
 echo "Building Arduino firmware..."
@@ -285,7 +289,6 @@ mkdir -p "$BUILD/daemon/code"
 if ! rsync -a \
     "$ROOT/daemon/code/" \
     "$BUILD/daemon/code/"; then
-
     echo
     echo "[FAIL] Daemon source copy failed."
     exit 1
@@ -307,7 +310,6 @@ if ! rsync -a \
     --exclude="build/" \
     "$ROOT/speech-service/" \
     "$BUILD/speech-service/"; then
-
     echo
     echo "[FAIL] Speech service source copy failed."
     exit 1
@@ -316,6 +318,12 @@ fi
 mkdir -p "$BUILD/speech-service/build"
 
 echo "[ OK ] Speech service source copied."
+echo
+
+echo "[INFO] Applying SELinux context..."
+
+sudo restorecon -Rv "$BUILD"
+
 echo
 
 echo "=========================================="

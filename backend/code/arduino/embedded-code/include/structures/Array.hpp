@@ -14,8 +14,10 @@ class Array
         size_t _arraySize; // how many items are currently in the array
         struct item
         {
-            x* value = nullptr;
-            bool owns = false; // allows array to be flexible, users can either store copies or references, this tells us whether array owns object being pointed to
+            x* value;
+            bool owns; // allows array to be flexible, users can either store copies or references, this tells us whether array owns object being pointed to
+
+            item(x* value = nullptr, bool owns = false) : value(value), owns(owns) {}
         };
 
         class Iterator

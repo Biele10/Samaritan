@@ -9,8 +9,8 @@ class HC : public Hardware
 {
     private:
 
-        const uint8_t _dataPin;
         const uint8_t _clockPin;
+        const uint8_t _dataPin;
         const uint8_t _latchPin;
         const uint8_t _maxIndex; // max index of any of the pins in the chip we can alter (0 -> 7)
 
