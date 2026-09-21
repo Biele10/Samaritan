@@ -7,19 +7,21 @@
 #include "output/Result.hpp"
 #include "structures/CommandDispatcher.hpp"
 #include "packet/Packet.hpp"
+#include "endpoints/EndpointService.hpp"
 
 // used to read bytes from serial
 uint8_t buffer[BUFFER_SIZE];
 uint16_t bufferIndex = 0;
 bool packetStarted = false;
 
-ArduinoController ac(Config::RED_LED_PIN, Config::HC_DATA_PIN, Config::HC_CLOCK_PIN, Config::HC_LATCH_PIN, Config::HC_MAX_INDEX);
+ArduinoController ac(Config::RED_LED_PIN, Config::HC_DATA_PIN, Config::HC_CLOCK_PIN, Config::HC_LATCH_PIN, Config::HC_MAX_INDEX, Config::HC_RED_LED_PIN, Config::HC_GREEN_LED_PIN);
 CommandDispatcher dispatcher;
+EndpointService endpoints(ac);
 
 void setup()
 {
   ac.setupHardware(); // configures all connected hardware
-  dispatcher.setup(ac); // loads all endpoints into dispatch table
+  dispatcher.setup(endpoints); // loads all endpoints into dispatch table
   Serial.begin(9600);
 }
 

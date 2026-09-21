@@ -8,20 +8,6 @@
 Led::Led(const uint8_t arduinoPin, const uint8_t hcPin, bool state) : Hardware(arduinoPin, hcPin, state) {};
 
 /**
- * Function that turns the LED on or off.
- */
-Result Led::power(uint16_t* args, uint8_t count)
-{
-    bool state = !(this->getState());
-    if (count > 0 && (args[0] == 1 || args[0] == 0))
-    {
-        state = args[0];
-    }
-
-    Hardware::power(state);
-}
-
-/**
  * Function that flashes the LED for a given period of time.
  * 
  * args:

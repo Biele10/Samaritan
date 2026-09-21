@@ -22,17 +22,19 @@ class Hardware
     public:
         virtual ~Hardware();
         virtual void update();
+        virtual void process();
         void setDirty(bool state);
         void setState(bool state);
-        bool getDirty();
-        bool getState();
         virtual bool power();
         virtual bool power(bool state);
         virtual bool logicPower();
         virtual bool logicPower(bool state);
+
         uint8_t getPin();
         uint8_t getArduinoPin();
         uint8_t getHcPin();
+        bool getDirty();
+        bool getState();
 };
 
 void Hardware::setState(bool state)
@@ -47,13 +49,13 @@ Hardware::~Hardware() {}
  */
 bool Hardware::power()
 {
-    return this->power(!this->_state);
+    return this->power(!this->getState());
 }
 
 /**
  * Function that turns a component on or off.
  */
-bool Hardware::power(bool state)
+bool Hardware::power(const bool state)
 {
     if (state == false)
     {
@@ -80,7 +82,7 @@ bool Hardware::logicPower()
  * the state logically, then when update() runs it will see change has
  * been made and update component accordingly.
  */
-bool Hardware::logicPower(bool state)
+bool Hardware::logicPower(const bool state)
 {
     this->setState(state);
     this->setDirty(true);
@@ -113,24 +115,14 @@ uint8_t Hardware::getPin()
     return static_cast<uint8_t>(NO_PIN);
 }
 
-uint8_t Hardware::getArduinoPin()
-{
-    return this->_arduinoPin;
-}
+uint8_t Hardware::getArduinoPin() { return this->_arduinoPin; }
 
-uint8_t Hardware::getHcPin()
-{
-    return this->_hcPin;
-}
+uint8_t Hardware::getHcPin() { return this->_hcPin; }
 
-bool Hardware::getDirty()
-{
-    return this->_isDirty;
-}
+bool Hardware::getDirty() { return this->_isDirty; }
 
-bool Hardware::getState()
-{
-    return this->_state;
-}
+bool Hardware::getState() { return this->_state; }
 
 void Hardware::update() {}
+
+void Hardware::process() {}

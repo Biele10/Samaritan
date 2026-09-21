@@ -7,5 +7,4 @@ class OnboardLed : public Hardware
 {
     public:
         OnboardLed(bool initialState = false);
-        Result power(uint16_t* args, uint8_t count);
 };

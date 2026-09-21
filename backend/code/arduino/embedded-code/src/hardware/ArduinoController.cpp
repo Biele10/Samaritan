@@ -9,13 +9,16 @@
  * Constructor
  * Initialises all hardware being used and creates an object for each one
  */
-ArduinoController::ArduinoController(const uint8_t redLedPin, const uint8_t hcDataPin, const uint8_t hcClockPin, const uint8_t hcLatchPin, const uint8_t hcMaxIndex)
-: _redLed(redLedPin), _onboardLed(), _hc(hcDataPin, hcClockPin, hcLatchPin, hcMaxIndex)
+ArduinoController::ArduinoController(const uint8_t redLedPin, const uint8_t hcDataPin, const uint8_t hcClockPin, const uint8_t hcLatchPin, 
+const uint8_t hcMaxIndex, const uint8_t noLedPin, const uint8_t yesLedPin) : _redLed(redLedPin), _onboardLed(), _hc(hcDataPin, hcClockPin,
+hcLatchPin, hcMaxIndex), _yesLed(NO_PIN, yesLedPin), _noLed(NO_PIN, noLedPin)
 {
   // adds all hardware to array
   this->_hardwareArray.addByPointer(&this->_redLed);
   this->_hardwareArray.addByPointer(&this->_onboardLed);
   this->_hardwareArray.addByPointer(&this->_hc);
+  this->_hardwareArray.addByPointer(&this->_noLed);
+  this->_hardwareArray.addByPointer(&this->_yesLed);
 }
 
 /**
@@ -31,24 +34,15 @@ void ArduinoController::setupHardware()
   pinMode(Config::HC_LATCH_PIN, OUTPUT);
 }
 
-Led& ArduinoController::getRedLed()
-{
-  return this->_redLed;
-}
-
-OnboardLed& ArduinoController::getOnBoardLed()
-{
-  return this->_onboardLed;
-}
-
-HC& ArduinoController::getHC()
-{
-  return this->_hc;
-}
-
+/**
+ * Runs code for each component that needs running every event cycle.
+ */
 void ArduinoController::process()
 {
-  // add funcs that need to run constantly
+  for (Hardware* hardware : this->_hardwareArray)
+  {
+    hardware->process();
+  }
 }
 
 /**
@@ -67,3 +61,9 @@ void ArduinoController::update()
     }
   }
 }
+
+Led& ArduinoController::getRedLed() { return this->_redLed; }
+OnboardLed& ArduinoController::getOnBoardLed() { return this->_onboardLed; }
+HC& ArduinoController::getHC() { return this->_hc; }
+Led& ArduinoController::getNoLed() { return this->_noLed; }
+Led& ArduinoController::getYesLed() { return this->_yesLed; }
