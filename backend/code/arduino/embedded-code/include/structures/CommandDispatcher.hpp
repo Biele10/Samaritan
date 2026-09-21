@@ -11,14 +11,14 @@
 class CommandDispatcher : public HashTable<uint16_t, Endpoint*>
 {
     public:
-        void setup(const EndpointService& endpoints); // function that is run at startup to load all endpoints into the hashtable
+        void setup(EndpointService& endpoints); // function that is run at startup to load all endpoints into the hashtable
         template<typename T>
-        void registerEndpoint(const uint16_t command, const T& object, Result (T::*handler)(const uint16_t*, uint8_t));
+        void registerEndpoint(const uint16_t command, T& object, Result (T::*handler)(const uint16_t*, uint8_t));
         Result dispatch(ParsedPacket* packet);
 
     private:
         size_t _hash(const uint16_t& key) const override;
         
         template<typename T>
-        Result _invokeEndpoint(void* object, Result (T::*method)(uint16_t*, uint8_t), uint16_t* args, uint8_t count);
+        Result _invokeEndpoint(void* object, Result (T::*method)(const uint16_t*, uint8_t), const uint16_t* args, uint8_t count);
 };
