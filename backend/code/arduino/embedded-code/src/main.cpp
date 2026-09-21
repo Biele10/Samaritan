@@ -26,7 +26,7 @@ void setup()
 // Main program loop, packet bytes are read from serial.
 void loop()
 {
-  if (Serial.available() > 0)
+  while (Serial.available() > 0) // listening for server requests
   {
     uint8_t byte = Serial.read();
     if(processByte(byte, buffer, bufferIndex, packetStarted)) // returns true once whole packet is complete

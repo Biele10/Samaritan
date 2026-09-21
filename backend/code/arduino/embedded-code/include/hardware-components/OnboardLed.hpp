@@ -9,5 +9,5 @@ class OnboardLed
         Result power(uint16_t* args, uint8_t count);
 
     private:
-        bool state;     // represents whether the LED is on or off
+        bool _state;     // represents whether the LED is on or off
 };

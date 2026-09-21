@@ -16,8 +16,8 @@ class CommandDispatcher : public HashTable<uint16_t, Endpoint*>
         Result dispatch(ParsedPacket* packet);
 
     private:
-        size_t hash(const uint16_t& key) const override;
+        size_t _hash(const uint16_t& key) const override;
         
         template<typename T>
-        Result invokeEndpoint(void* object, Result (T::*method)(uint16_t*, uint8_t), uint16_t* args, uint8_t count);
+        Result _invokeEndpoint(void* object, Result (T::*method)(uint16_t*, uint8_t), uint16_t* args, uint8_t count);
 };

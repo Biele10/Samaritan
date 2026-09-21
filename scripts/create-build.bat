@@ -1,10 +1,6 @@
 @echo off
 setlocal EnableExtensions
 
-REM ==========================================
-REM Samaritan - Create Build
-REM ==========================================
-
 set "ROOT=%~dp0.."
 set "BUILD=%ROOT%\Samaritan-Build"
 
@@ -14,15 +10,10 @@ echo Samaritan - Create Build
 echo ==========================================
 echo.
 
-REM ==========================================
-REM Check required tools
-REM ==========================================
-
 echo Checking required build tools...
 echo.
 
 where npm >nul 2>&1
-
 if errorlevel 1 (
     echo [FAIL] npm was not found.
     echo.
@@ -31,7 +22,6 @@ if errorlevel 1 (
 )
 
 where composer >nul 2>&1
-
 if errorlevel 1 (
     echo [FAIL] Composer was not found.
     echo.
@@ -40,7 +30,6 @@ if errorlevel 1 (
 )
 
 where py >nul 2>&1
-
 if errorlevel 1 (
     echo [FAIL] Python was not found.
     echo.
@@ -49,7 +38,6 @@ if errorlevel 1 (
 )
 
 py -m platformio --version >nul 2>&1
-
 if errorlevel 1 (
     echo [FAIL] PlatformIO was not found.
     echo.
@@ -61,10 +49,6 @@ echo [ OK ] npm found.
 echo [ OK ] Composer found.
 echo [ OK ] Python found.
 echo [ OK ] PlatformIO found.
-
-REM ==========================================
-REM Check project files
-REM ==========================================
 
 echo.
 echo ==========================================
@@ -78,7 +62,7 @@ if not exist "%ROOT%\package.json" (
 )
 
 if not exist "%ROOT%\backend\composer.json" (
-    echo [FAIL] backend\composer.json was not found.
+    echo [FAIL] composer.json was not found.
     exit /b 1
 )
 
@@ -91,10 +75,6 @@ echo [ OK ] package.json found.
 echo [ OK ] composer.json found.
 echo [ OK ] platformio.ini found.
 
-REM ==========================================
-REM Prepare build directory
-REM ==========================================
-
 echo.
 echo ==========================================
 echo Preparing build directory...
@@ -104,7 +84,6 @@ echo.
 if exist "%BUILD%" (
     echo Removing previous Samaritan-Build...
     rmdir /s /q "%BUILD%"
-
     if errorlevel 1 (
         echo.
         echo [FAIL] Failed to remove previous build directory.
@@ -113,7 +92,6 @@ if exist "%BUILD%" (
 )
 
 mkdir "%BUILD%"
-
 if errorlevel 1 (
     echo.
     echo [FAIL] Failed to create build directory.
@@ -121,10 +99,6 @@ if errorlevel 1 (
 )
 
 echo [ OK ] Build directory prepared.
-
-REM ==========================================
-REM Update JavaScript dependencies
-REM ==========================================
 
 echo.
 echo ==========================================
@@ -148,10 +122,6 @@ if errorlevel 1 (
 
 echo [ OK ] JavaScript dependencies ready.
 
-REM ==========================================
-REM Build React
-REM ==========================================
-
 echo.
 echo ==========================================
 echo Building React application...
@@ -167,10 +137,6 @@ if errorlevel 1 (
 )
 
 echo [ OK ] React application built.
-
-REM ==========================================
-REM Copy React build
-REM ==========================================
 
 echo.
 echo ==========================================
@@ -194,18 +160,10 @@ if errorlevel 8 (
 
 echo [ OK ] Frontend copied.
 
-*REM ==========================================*
-*REM Update Composer dependencies*
-*REM ==========================================*
-
 echo.
-
 echo ==========================================
-
 echo Preparing PHP dependencies...
-
 echo ==========================================
-
 echo.
 
 cd /d "%ROOT%\backend"
@@ -213,20 +171,12 @@ cd /d "%ROOT%\backend"
 call composer install --no-dev --optimize-autoloader
 
 if errorlevel 1 (
-
     echo.
-
     echo [FAIL] Composer dependency installation failed.
-
     exit /b 1
-
 )
 
 echo [ OK ] PHP dependencies ready.
-
-REM ==========================================
-REM Copy backend
-REM ==========================================
 
 echo.
 echo ==========================================
@@ -243,10 +193,6 @@ if errorlevel 8 (
 )
 
 echo [ OK ] Backend copied.
-
-REM ==========================================
-REM Build Arduino firmware
-REM ==========================================
 
 echo.
 echo ==========================================
@@ -265,10 +211,6 @@ if errorlevel 1 (
 )
 
 echo [ OK ] Arduino firmware built.
-
-REM ==========================================
-REM Copy firmware
-REM ==========================================
 
 echo.
 echo ==========================================
@@ -297,10 +239,6 @@ if errorlevel 1 (
 
 echo [ OK ] Arduino firmware packaged.
 
-REM ==========================================
-REM Copy daemon source
-REM ==========================================
-
 echo.
 echo ==========================================
 echo Copying daemon source...
@@ -317,31 +255,58 @@ if errorlevel 8 (
 
 echo [ OK ] Daemon source copied.
 
-REM ==========================================
-REM Create daemon build directory
-REM ==========================================
-
 if not exist "%BUILD%\daemon\build" (
     mkdir "%BUILD%\daemon\build"
 )
 
-REM ==========================================
-REM Finished
-REM ==========================================
+echo.
+echo ==========================================
+echo Copying speech service source...
+echo ==========================================
+echo.
+
+if not exist "%ROOT%\speech-service\code\speech.cpp" (
+    echo.
+    echo [FAIL] speech.cpp was not found.
+    exit /b 1
+)
+
+if not exist "%ROOT%\speech-service\samaritan-speech-service.service" (
+    echo.
+    echo [FAIL] samaritan-speech-service.service was not found.
+    exit /b 1
+)
+
+robocopy "%ROOT%\speech-service" "%BUILD%\speech-service" /E /IS /IT /XD "%ROOT%\speech-service\build"
+
+if errorlevel 8 (
+    echo.
+    echo [FAIL] Speech service source copy failed.
+    exit /b 1
+)
+
+echo [ OK ] Speech service source copied.
+
+if not exist "%BUILD%\speech-service\build" (
+    mkdir "%BUILD%\speech-service\build"
+)
 
 echo.
 echo ==========================================
 echo Samaritan build created successfully.
 echo ==========================================
 echo.
+
 echo Build location:
 echo %BUILD%
 echo.
+
 echo Contents:
-echo   public_html\       React application
-echo   backend\           PHP application
-echo   daemon\code\       C++ daemon source
-echo   firmware\          Pre-built Arduino firmware
+echo   public_html\      React application
+echo   backend\          PHP application
+echo   daemon\code\      C++ daemon source
+echo   speech-service\   C++ speech service
+echo   firmware\         Pre-built Arduino firmware
 echo.
 
 endlocal

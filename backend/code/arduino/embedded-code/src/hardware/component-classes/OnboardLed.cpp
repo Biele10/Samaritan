@@ -4,20 +4,20 @@
 #include "structures/HashTable.hpp"
 #include "config/config.hpp"
 
-OnboardLed::OnboardLed(bool initialState) : state(initialState) {};
+OnboardLed::OnboardLed(bool initialState) : _state(initialState) {};
 
 Result OnboardLed::power(uint16_t* args, uint8_t count)
 {
-    if ((this->state) == false)
+    if ((this->_state) == false)
     {
         digitalWrite(LED_BUILTIN, HIGH);
     }
 
-    else if ((this->state) == true)
+    else if ((this->_state) == true)
     {
         digitalWrite(LED_BUILTIN, LOW);
     }
 
-    this->state = !(this->state);
+    this->_state = !(this->_state);
     return Result::Success("Changed state of onboard LED.");
 }

@@ -8,7 +8,7 @@
 /**
  * Constructor
  */
-ArduinoController::ArduinoController(int redLedPin) : redLed(redLedPin), onboardLed() {}   // initialises all hardware being used and creates an object for each one
+ArduinoController::ArduinoController(int redLedPin) : _redLed(redLedPin), _onboardLed() {}   // initialises all hardware being used and creates an object for each one
 
 /**
  * Ran in setup function, sets up
@@ -22,10 +22,10 @@ void ArduinoController::setupHardware()
 
 Led& ArduinoController::getRedLed()
 {
-  return this->redLed;
+  return this->_redLed;
 }
 
 OnboardLed& ArduinoController::getOnBoardLed()
 {
-  return this->onboardLed;
+  return this->_onboardLed;
 }

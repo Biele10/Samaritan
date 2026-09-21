@@ -4,7 +4,7 @@
 #include "structures/HashTable.hpp"
 #include "config/config.hpp"
 
-Led::Led(int pinNumber, bool initialState) : pin(pinNumber), state(initialState) {};
+Led::Led(int pinNumber, bool initialState) : _pin(pinNumber), _state(initialState) {};
 
 /**
  * Function that turns the LED on or off, this
@@ -13,17 +13,17 @@ Led::Led(int pinNumber, bool initialState) : pin(pinNumber), state(initialState)
  */
 Result Led::power(uint16_t* args, uint8_t count)
 {
-    if ((this->state) == false)
+    if ((this->_state) == false)
     {
-        digitalWrite(pin, HIGH);
+        digitalWrite(_pin, HIGH);
     }
 
-    else if ((this->state) == true)
+    else if ((this->_state) == true)
     {
-        digitalWrite(pin, LOW);
+        digitalWrite(_pin, LOW);
     }
 
-    this->state = !(this->state);
+    this->_state = !(this->_state);
     return Result::Success("Changed state of the LED");
 }
 
@@ -33,27 +33,27 @@ Result Led::power(uint16_t* args, uint8_t count)
 /**
  * Turns LED on.
  */
-Result Led::on()
+Result Led::_on()
 {
-    if ((this->state) == false)             // these state checks are done to avoid unecessary digitalWrites
+    if ((this->_state) == false)             // these state checks are done to avoid unecessary digitalWrites
     {
-        digitalWrite(pin, HIGH);
+        digitalWrite(_pin, HIGH);
     }
 
-    this->state = !(this->state);
+    this->_state = !(this->_state);
     return Result::Success("Turned LED on.");
 }
 
 /**
  * Turns LED off.
  */
-Result Led::off()
+Result Led::_off()
 {
-    if ((this->state) == true)
+    if ((this->_state) == true)
     {
-        digitalWrite(pin, LOW);
+        digitalWrite(_pin, LOW);
     }
 
-    this->state = !(this->state);
+    this->_state = !(this->_state);
     return Result::Success("Turned LED off.");
 }

@@ -1,0 +1,19 @@
+[Unit]
+Description=Samaritan speech recognition service
+After=network.target
+
+[Service]
+Type=simple
+
+User=ubuntu
+Group=samaritan
+
+WorkingDirectory=/var/www/Samaritan/speech-service
+
+ExecStart=/var/www/Samaritan/speech-service/build/samaritan-speech-service
+
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
