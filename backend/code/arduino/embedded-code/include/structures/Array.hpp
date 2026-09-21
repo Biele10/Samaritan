@@ -17,6 +17,31 @@ class Array
             x* value = nullptr;
             bool owns = false; // allows array to be flexible, users can either store copies or references, this tells us whether array owns object being pointed to
         };
+
+        class Iterator
+        {
+            private:
+                item* _current;
+
+            public:
+                Iterator(item* current) : _current(current) {}
+
+                x* operator*()
+                {
+                    return _current->value;
+                }
+
+                Iterator& operator++()
+                {
+                    ++_current;
+                    return *this;
+                }
+
+                bool operator!=(const Iterator& other) const
+                {
+                    return _current != other._current;
+                }
+        };
         
         item* _internalArray; // creates array with base size of 10 of x datatype
 
@@ -114,5 +139,15 @@ class Array
             }
 
             delete[] _internalArray;
+        }
+
+        Iterator begin()
+        {
+            return Iterator(_internalArray);
+        }
+
+        Iterator end()
+        {
+            return Iterator(_internalArray + _arraySize);
         }
 };

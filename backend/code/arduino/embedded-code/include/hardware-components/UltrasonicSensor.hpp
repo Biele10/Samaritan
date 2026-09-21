@@ -2,6 +2,7 @@
 #include "structures/HashTable.hpp"
 #include "output/Result.hpp"
 #include "HCSR04.h"
+#include "hardware-components/Hardware.hpp"
 
 enum MovementResult
 {
@@ -10,7 +11,7 @@ enum MovementResult
     WAITING
 };
 
-class UltrasonicSensor
+class UltrasonicSensor : public Hardware
 {
     public:
         UltrasonicSensor(int trigPin, int echoPin);

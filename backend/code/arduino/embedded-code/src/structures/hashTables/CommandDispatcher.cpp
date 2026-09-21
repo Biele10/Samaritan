@@ -2,6 +2,7 @@
 #include "controller/ArduinoController.hpp"
 #include "Endpoints.hpp"
 #include "packet/Packet.hpp"
+#include "endpoints/EndpointService.hpp"
 
 template<typename T>
 Result CommandDispatcher::_invokeEndpoint(void* object, Result (T::*method)(uint16_t*, uint8_t), uint16_t* args, uint8_t count)
@@ -16,7 +17,7 @@ Result CommandDispatcher::_invokeEndpoint(void* object, Result (T::*method)(uint
  * store object + handler together
  */
 template <typename T>
-void CommandDispatcher::registerEndpoint(const uint16_t command, T& object, Result (T::*handler)(uint16_t*, uint8_t))
+void CommandDispatcher::registerEndpoint(const uint16_t command, const T& object, Result (T::*handler)(const uint16_t*, uint8_t))
 {
     Endpoint* endpoint = new TypedEndpoint<T>
     {
@@ -30,10 +31,12 @@ void CommandDispatcher::registerEndpoint(const uint16_t command, T& object, Resu
 /**
  * This is where endpoints are mapped to binary commands.
  */
-void CommandDispatcher::setup(ArduinoController& ac)
+void CommandDispatcher::setup(const EndpointService& endpoints)
 {
-    registerEndpoint(RED_LED_POWER, ac.getRedLed(), &Led::power);
-    registerEndpoint(ONBOARD_LED_POWER, ac.getOnBoardLed(), &OnboardLed::power);
+    registerEndpoint(RED_LED_POWER, endpoints, &EndpointService::redLedPower);
+    registerEndpoint(ONBOARD_LED_POWER, endpoints, &EndpointService::onboardLedPower);
+    registerEndpoint(GREEN_LED_FLASH, endpoints, &EndpointService::yes);
+    registerEndpoint(RED_LED_FLASH, endpoints, &EndpointService::no);
 }
 
 /**

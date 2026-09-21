@@ -7,19 +7,21 @@
 #include "output/Result.hpp"
 #include "structures/CommandDispatcher.hpp"
 #include "packet/Packet.hpp"
+#include "endpoints/EndpointService.hpp"
 
 // used to read bytes from serial
 uint8_t buffer[BUFFER_SIZE];
 uint16_t bufferIndex = 0;
 bool packetStarted = false;
 
-ArduinoController ac(Config::RED_LED_PIN);
+ArduinoController ac(Config::RED_LED_PIN, Config::HC_DATA_PIN, Config::HC_CLOCK_PIN, Config::HC_LATCH_PIN, Config::HC_MAX_INDEX, Config::HC_RED_LED_PIN, Config::HC_GREEN_LED_PIN);
 CommandDispatcher dispatcher;
+EndpointService endpoints(ac);
 
 void setup()
 {
   ac.setupHardware(); // configures all connected hardware
-  dispatcher.setup(ac); // loads all endpoints into dispatch table
+  dispatcher.setup(endpoints); // loads all endpoints into dispatch table
   Serial.begin(9600);
 }
 
@@ -29,7 +31,7 @@ void loop()
   while (Serial.available() > 0) // listening for server requests
   {
     uint8_t byte = Serial.read();
-    if(processByte(byte, buffer, bufferIndex, packetStarted)) // returns true once whole packet is complete
+    if (processByte(byte, buffer, bufferIndex, packetStarted)) // returns true once whole packet is complete
     {
       ParsedPacket* parsedPacket = parsePacket(buffer);
       if (parsedPacket != nullptr)
@@ -38,5 +40,8 @@ void loop()
         cleanUp(parsedPacket); // frees up memory
       }
     }
+
+    ac.process(); // runs code that need to be run every event loop
+    ac.update(); // any state changes we have made can now be updated at the end of the event loop
   }
 }

@@ -1,59 +1,45 @@
 #include <Arduino.h>
+#include "hardware-components/Hardware.hpp"
 #include "hardware-components/Led.hpp"
 #include "output/Result.hpp"
 #include "structures/HashTable.hpp"
 #include "config/config.hpp"
 
-Led::Led(int pinNumber, bool initialState) : _pin(pinNumber), _state(initialState) {};
+Led::Led(const uint8_t arduinoPin, const uint8_t hcPin, bool state) : Hardware(arduinoPin, hcPin, state) {};
 
 /**
- * Function that turns the LED on or off, this
- * is only used via the website because the website does not
- * have a way of tracking the state of the LED.
+ * Function that flashes the LED for a given period of time.
+ * 
+ * args:
+ * [0] - Time in ms to flash LED for.
  */
-Result Led::power(uint16_t* args, uint8_t count)
+Result Led::flash(uint16_t* args, uint8_t count)
 {
-    if ((this->_state) == false)
+    uint16_t flashTime = 2000; // 2 seconds default
+    uint8_t ardPin = this->getArduinoPin();
+    if (count != 0)
     {
-        digitalWrite(_pin, HIGH);
+        flashTime = args[0];
     }
 
-    else if ((this->_state) == true)
+    if ((this->getState()) == false)
     {
-        digitalWrite(_pin, LOW);
+        this->setState(true);
+        digitalWrite(ardPin, HIGH);
     }
 
-    this->_state = !(this->_state);
-    return Result::Success("Changed state of the LED");
-}
-
-// The on and off functions are used internally for specific behaviour
-// as current state of the LED can easily be tracked.
-
-/**
- * Turns LED on.
- */
-Result Led::_on()
-{
-    if ((this->_state) == false)             // these state checks are done to avoid unecessary digitalWrites
-    {
-        digitalWrite(_pin, HIGH);
-    }
-
-    this->_state = !(this->_state);
-    return Result::Success("Turned LED on.");
+    delay(flashTime);                              // TEMP THIS IS ONYL FOR TESTING DO NOT ACTUALLY USE THIS THIS BLOCKS WHOLE EVENT LOOP
+    digitalWrite(ardPin, LOW);
+    
+    this->setState(false);
+    return Result::Success("Flashed the LED");
 }
 
 /**
- * Turns LED off.
+ * Updates all physical aspects of the LED.
+ * This is called at the end of a process loop.
  */
-Result Led::_off()
+void Led::update()
 {
-    if ((this->_state) == true)
-    {
-        digitalWrite(_pin, LOW);
-    }
-
-    this->_state = !(this->_state);
-    return Result::Success("Turned LED off.");
+    Hardware::power(this->getState());
 }

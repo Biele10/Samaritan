@@ -1,4 +1,5 @@
 @echo off
+
 setlocal EnableExtensions
 
 set "ROOT=%~dp0.."
@@ -49,8 +50,8 @@ echo [ OK ] npm found.
 echo [ OK ] Composer found.
 echo [ OK ] Python found.
 echo [ OK ] PlatformIO found.
-
 echo.
+
 echo ==========================================
 echo Checking project files...
 echo ==========================================
@@ -71,11 +72,35 @@ if not exist "%ROOT%\backend\code\arduino\embedded-code\platformio.ini" (
     exit /b 1
 )
 
+if not exist "%ROOT%\speech-service\code\speech.cpp" (
+    echo [FAIL] speech.cpp was not found.
+    exit /b 1
+)
+
+if not exist "%ROOT%\speech-service\code\processTranscription.cpp" (
+    echo [FAIL] processTranscription.cpp was not found.
+    exit /b 1
+)
+
+if not exist "%ROOT%\speech-service\code\config\config.hpp" (
+    echo [FAIL] speech-service config.hpp was not found.
+    exit /b 1
+)
+
+if not exist "%ROOT%\speech-service\samaritan-speech-service.service" (
+    echo [FAIL] samaritan-speech-service.service was not found.
+    exit /b 1
+)
+
 echo [ OK ] package.json found.
 echo [ OK ] composer.json found.
 echo [ OK ] platformio.ini found.
-
+echo [ OK ] speech.cpp found.
+echo [ OK ] processTranscription.cpp found.
+echo [ OK ] speech config.hpp found.
+echo [ OK ] Speech service systemd file found.
 echo.
+
 echo ==========================================
 echo Preparing build directory...
 echo ==========================================
@@ -84,6 +109,7 @@ echo.
 if exist "%BUILD%" (
     echo Removing previous Samaritan-Build...
     rmdir /s /q "%BUILD%"
+
     if errorlevel 1 (
         echo.
         echo [FAIL] Failed to remove previous build directory.
@@ -92,6 +118,7 @@ if exist "%BUILD%" (
 )
 
 mkdir "%BUILD%"
+
 if errorlevel 1 (
     echo.
     echo [FAIL] Failed to create build directory.
@@ -99,8 +126,8 @@ if errorlevel 1 (
 )
 
 echo [ OK ] Build directory prepared.
-
 echo.
+
 echo ==========================================
 echo Preparing JavaScript dependencies...
 echo ==========================================
@@ -121,8 +148,8 @@ if errorlevel 1 (
 )
 
 echo [ OK ] JavaScript dependencies ready.
-
 echo.
+
 echo ==========================================
 echo Building React application...
 echo ==========================================
@@ -137,8 +164,8 @@ if errorlevel 1 (
 )
 
 echo [ OK ] React application built.
-
 echo.
+
 echo ==========================================
 echo Copying frontend build...
 echo ==========================================
@@ -159,8 +186,8 @@ if errorlevel 8 (
 )
 
 echo [ OK ] Frontend copied.
-
 echo.
+
 echo ==========================================
 echo Preparing PHP dependencies...
 echo ==========================================
@@ -177,8 +204,8 @@ if errorlevel 1 (
 )
 
 echo [ OK ] PHP dependencies ready.
-
 echo.
+
 echo ==========================================
 echo Copying backend...
 echo ==========================================
@@ -193,8 +220,8 @@ if errorlevel 8 (
 )
 
 echo [ OK ] Backend copied.
-
 echo.
+
 echo ==========================================
 echo Building Arduino firmware...
 echo ==========================================
@@ -211,8 +238,8 @@ if errorlevel 1 (
 )
 
 echo [ OK ] Arduino firmware built.
-
 echo.
+
 echo ==========================================
 echo Packaging Arduino firmware...
 echo ==========================================
@@ -238,8 +265,8 @@ if errorlevel 1 (
 )
 
 echo [ OK ] Arduino firmware packaged.
-
 echo.
+
 echo ==========================================
 echo Copying daemon source...
 echo ==========================================
@@ -260,22 +287,11 @@ if not exist "%BUILD%\daemon\build" (
 )
 
 echo.
+
 echo ==========================================
 echo Copying speech service source...
 echo ==========================================
 echo.
-
-if not exist "%ROOT%\speech-service\code\speech.cpp" (
-    echo.
-    echo [FAIL] speech.cpp was not found.
-    exit /b 1
-)
-
-if not exist "%ROOT%\speech-service\samaritan-speech-service.service" (
-    echo.
-    echo [FAIL] samaritan-speech-service.service was not found.
-    exit /b 1
-)
 
 robocopy "%ROOT%\speech-service" "%BUILD%\speech-service" /E /IS /IT /XD "%ROOT%\speech-service\build"
 
@@ -292,6 +308,7 @@ if not exist "%BUILD%\speech-service\build" (
 )
 
 echo.
+
 echo ==========================================
 echo Samaritan build created successfully.
 echo ==========================================
