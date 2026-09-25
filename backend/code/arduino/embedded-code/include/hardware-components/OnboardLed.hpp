@@ -6,5 +6,8 @@
 class OnboardLed : public Hardware
 {
     public:
-        OnboardLed(bool initialState = false);
+        using Hardware::Hardware;
+
+        bool power();
+        bool power(const bool state);
 };

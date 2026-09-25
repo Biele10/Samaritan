@@ -6,7 +6,8 @@
 class Led: public Hardware
 {
     public:
-        Led(const uint8_t arduinoPin, const uint8_t hcPin = NO_PIN, bool state = false);
+        using Hardware::Hardware; // inherit constructor from hardware
+
         Result flash(uint16_t* args, uint8_t count);
         void update() override;
 };
