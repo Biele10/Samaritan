@@ -39,15 +39,17 @@ Result EndpointService::onboardLedPower(const uint16_t* args, uint8_t count)
 Result EndpointService::yes(const uint16_t* args, uint8_t count)
 {
     Led& yesLed = this->_ac.getYesLed();
-    HC& hc = this->_ac.getHC();
 
-    bool state = !(yesLed.getState()); // get opposite of current state
     if (count > 0 && (args[0] == 1 || args[0] == 0))
     {
-        state = args[0];
+        yesLed.power(args[0]);
     }
-
-    hc.adjustBit(yesLed.getHcPin(), state); // flips bit on HC for LED
+        
+    else
+    {
+        yesLed.power();
+    }
+        
     return Result::Success(); // still need to sort out result stuff lol
 }
 

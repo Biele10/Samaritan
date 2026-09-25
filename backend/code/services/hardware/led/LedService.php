@@ -6,7 +6,7 @@ Class LedService extends \Samaritan\services\hardware\HardwareService
 {
     public function power() : array
     {
-        $command = \Samaritan\arduino\Commands::GREEN_LED_FLASH;
+        $command = \Samaritan\arduino\Commands::RED_LED_POWER;
         $result = $this->sendCommand($command);
 
         if ($result['success'] !== true)

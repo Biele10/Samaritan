@@ -10,8 +10,12 @@
  * Initialises all hardware being used and creates an object for each one
  */
 ArduinoController::ArduinoController(const uint8_t redLedPin, const uint8_t hcDataPin, const uint8_t hcClockPin, const uint8_t hcLatchPin, 
-const uint8_t hcMaxIndex, const uint8_t noLedPin, const uint8_t yesLedPin) : _redLed(redLedPin), _onboardLed(), _hc(hcDataPin, hcClockPin,
-hcLatchPin, hcMaxIndex), _yesLed(NO_PIN, yesLedPin), _noLed(NO_PIN, noLedPin)
+const uint8_t hcMaxIndex, const uint8_t noLedPin, const uint8_t yesLedPin) : 
+  _hc(hcDataPin, hcClockPin, hcLatchPin, hcMaxIndex),
+  _redLed(redLedPin),
+  _onboardLed(),
+  _yesLed(NO_PIN, yesLedPin, false, &_hc),
+  _noLed(NO_PIN, noLedPin, false, &_hc)
 {
   // adds all hardware to array
   this->_hardwareArray.addByPointer(&this->_redLed);

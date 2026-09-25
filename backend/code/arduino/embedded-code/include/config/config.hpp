@@ -13,8 +13,8 @@ namespace Config
     constexpr const uint8_t HC_LATCH_PIN = 13;
     constexpr const uint8_t HC_MAX_INDEX = 7;
 
-    constexpr const uint8_t HC_RED_LED_PIN = 7; // anything 'HC' means the pin relative to the 74HC595 chip
-    constexpr const uint8_t HC_GREEN_LED_PIN = 6;
+    constexpr const uint8_t HC_RED_LED_PIN = 0; // anything 'HC' means the pin relative to the 74HC595 chip
+    constexpr const uint8_t HC_GREEN_LED_PIN = 1;
 
 
     constexpr size_t BASE_ARRAY_SIZE = 10;

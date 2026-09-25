@@ -4,8 +4,7 @@
 #include "output/Result.hpp"
 #include "structures/HashTable.hpp"
 #include "config/config.hpp"
-
-Led::Led(const uint8_t arduinoPin, const uint8_t hcPin, bool state) : Hardware(arduinoPin, hcPin, state) {};
+#include "hardware-components/HC.hpp"
 
 /**
  * Function that flashes the LED for a given period of time.

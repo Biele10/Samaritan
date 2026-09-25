@@ -1,8 +1,8 @@
 #include "Arduino.h"
 #include "hardware-components/HC.hpp"
 
-HC::HC(const uint8_t hcClockPin, const uint8_t hcDataPin, const uint8_t hcLatchPin, const uint8_t hcMaxIndex) : 
-_clockPin(hcClockPin), _dataPin(hcDataPin), _latchPin(hcLatchPin), _maxIndex(hcMaxIndex) {}
+HC::HC(const uint8_t dataPin, const uint8_t clockPin, const uint8_t latchPin, const uint8_t maxIndex) : 
+_clockPin(clockPin), _dataPin(dataPin), _latchPin(latchPin), _maxIndex(maxIndex) { this->_updateShiftRegister(); }
 
 /**
  * Updates a bit on the class and on the register instantly.

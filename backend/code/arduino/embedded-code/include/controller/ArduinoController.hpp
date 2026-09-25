@@ -29,9 +29,9 @@ class ArduinoController
         //Result pendingResults; // stores results from functions that need sending back to server
     
     private:
+        HC _hc; // this has to be constructed first as other components depend on it
         Led _redLed;
         OnboardLed _onboardLed;
-        HC _hc;
         Led _yesLed; // green
         Led _noLed; // red
         Array<Hardware> _hardwareArray;

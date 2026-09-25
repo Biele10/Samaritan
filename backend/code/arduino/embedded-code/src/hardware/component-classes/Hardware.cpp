@@ -1,6 +1,7 @@
 #include "Arduino.h"
 #include "config/config.hpp"
 #include "hardware-components/Hardware.hpp"
+#include "hardware-components/HC.hpp"
 
 void Hardware::setState(bool state)
 {
@@ -22,6 +23,14 @@ bool Hardware::power()
  */
 bool Hardware::power(const bool state)
 {
+    const uint8_t hcPin = this->getHcPin();
+    if (hcPin != NO_PIN && this->_hc != nullptr) // component is attached via HC chip, power this way instead
+    {
+        this->_hc->adjustBit(hcPin, state);
+        this->setState(state);
+        return true;
+    }
+
     if (state == false)
     {
         digitalWrite(this->getArduinoPin(), HIGH);
