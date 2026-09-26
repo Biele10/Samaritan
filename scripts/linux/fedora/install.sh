@@ -15,12 +15,14 @@ if [[ ! -f /etc/fedora-release ]]; then
     echo "[FAIL] This installer is intended for Fedora."
     echo
     echo "Detected system:"
+    
     if [[ -f /etc/os-release ]]; then
         . /etc/os-release
         echo "$PRETTY_NAME"
     else
         echo "Unknown"
     fi
+
     exit 1
 fi
 
@@ -65,8 +67,6 @@ fi
 
 if [[ ! -f "$ROOT/samaritan.conf" ]]; then
     echo "[FAIL] samaritan.conf was not found."
-    echo "Expected:"
-    echo "$ROOT/samaritan.conf"
     exit 1
 fi
 
@@ -267,6 +267,7 @@ echo "[ OK ] SCP found."
 echo
 
 PI_HOST="ubuntu@192.168.1.88"
+
 read -r -p "Enter Raspberry Pi SSH host [$PI_HOST]: " INPUT_PI_HOST
 
 if [[ -n "$INPUT_PI_HOST" ]]; then
@@ -274,6 +275,7 @@ if [[ -n "$INPUT_PI_HOST" ]]; then
 fi
 
 PI_PORT="22"
+
 read -r -p "Enter SSH port [$PI_PORT]: " INPUT_PI_PORT
 
 if [[ -n "$INPUT_PI_PORT" ]]; then
@@ -291,6 +293,11 @@ STAGE2_SCRIPT="$ROOT/scripts/install-stage2.sh"
 
 DAEMON_SERVICE_FILE="$ROOT/daemon/samaritan-daemon.service"
 SPEECH_SERVICE_FILE="$ROOT/speech-service/samaritan-speech-service.service"
+
+OLLAMA_MODEL_FILE="$ROOT/ollama/Modelfile"
+OLLAMA_MODEL_SERVICE_FILE="$ROOT/ollama/samaritan-model.service"
+OLLAMA_LOAD_SCRIPT_FILE="$ROOT/ollama/load-model.sh"
+
 APACHE_FILE="$ROOT/samaritan.conf"
 
 if [[ ! -f "$STAGE1_SCRIPT" ]]; then
@@ -313,6 +320,21 @@ if [[ ! -f "$SPEECH_SERVICE_FILE" ]]; then
     exit 1
 fi
 
+if [[ ! -f "$OLLAMA_MODEL_FILE" ]]; then
+    echo "[FAIL] Ollama Modelfile was not found."
+    exit 1
+fi
+
+if [[ ! -f "$OLLAMA_MODEL_SERVICE_FILE" ]]; then
+    echo "[FAIL] samaritan-model.service was not found."
+    exit 1
+fi
+
+if [[ ! -f "$OLLAMA_LOAD_SCRIPT_FILE" ]]; then
+    echo "[FAIL] load-model.sh was not found."
+    exit 1
+fi
+
 if [[ ! -f "$APACHE_FILE" ]]; then
     echo "[FAIL] samaritan.conf was not found."
     exit 1
@@ -322,14 +344,23 @@ echo "[ OK ] Stage 1 installer found."
 echo "[ OK ] Stage 2 installer found."
 echo "[ OK ] Samaritan daemon service found."
 echo "[ OK ] Samaritan speech service found."
+echo "[ OK ] Ollama Modelfile found."
+echo "[ OK ] Samaritan model service found."
+echo "[ OK ] Samaritan model loader found."
 echo "[ OK ] Samaritan Apache configuration found."
 
 REMOTE_STAGE1="/tmp/samaritan-install-stage1.sh"
 
 REMOTE_STAGE2_DIR="/tmp/samaritan-install-stage2"
+
 REMOTE_STAGE2="$REMOTE_STAGE2_DIR/install-stage2.sh"
 REMOTE_DAEMON_SERVICE="$REMOTE_STAGE2_DIR/samaritan-daemon.service"
 REMOTE_SPEECH_SERVICE="$REMOTE_STAGE2_DIR/samaritan-speech-service.service"
+
+REMOTE_OLLAMA_MODEL_FILE="$REMOTE_STAGE2_DIR/Modelfile"
+REMOTE_OLLAMA_MODEL_SERVICE="$REMOTE_STAGE2_DIR/samaritan-model.service"
+REMOTE_OLLAMA_LOAD_SCRIPT="$REMOTE_STAGE2_DIR/load-model.sh"
+
 REMOTE_APACHE="$REMOTE_STAGE2_DIR/samaritan.conf"
 
 echo
@@ -346,13 +377,16 @@ if ! scp -P "$PI_PORT" \
 
     echo
     echo "[FAIL] Failed to upload Stage 1 installer."
+
     ssh -p "$PI_PORT" "$PI_HOST" \
         "rm -f '$REMOTE_STAGE1'" >/dev/null 2>&1 || true
+
     exit 1
 fi
 
 echo "[ OK ] Stage 1 installer uploaded."
 echo
+
 echo "[INFO] Running Stage 1..."
 
 if ! ssh -p "$PI_PORT" "$PI_HOST" "
@@ -365,14 +399,16 @@ if ! ssh -p "$PI_PORT" "$PI_HOST" "
 
     echo
     echo "[FAIL] Stage 1 installation failed."
+
     ssh -p "$PI_PORT" "$PI_HOST" \
         "rm -f '$REMOTE_STAGE1'" >/dev/null 2>&1 || true
+
     exit 1
 fi
 
 echo "[ OK ] Stage 1 completed successfully."
-
 echo
+
 echo "=============================================="
 echo "Stage 2 - Raspberry Pi Configuration"
 echo "=============================================="
@@ -401,8 +437,10 @@ if ! scp -P "$PI_PORT" \
 
     echo
     echo "[FAIL] Failed to upload Stage 2 installer."
+
     ssh -p "$PI_PORT" "$PI_HOST" \
         "rm -rf '$REMOTE_STAGE2_DIR'" >/dev/null 2>&1 || true
+
     exit 1
 fi
 
@@ -417,8 +455,10 @@ if ! scp -P "$PI_PORT" \
 
     echo
     echo "[FAIL] Failed to upload Samaritan daemon service."
+
     ssh -p "$PI_PORT" "$PI_HOST" \
         "rm -rf '$REMOTE_STAGE2_DIR'" >/dev/null 2>&1 || true
+
     exit 1
 fi
 
@@ -433,12 +473,68 @@ if ! scp -P "$PI_PORT" \
 
     echo
     echo "[FAIL] Failed to upload Samaritan speech service."
+
     ssh -p "$PI_PORT" "$PI_HOST" \
         "rm -rf '$REMOTE_STAGE2_DIR'" >/dev/null 2>&1 || true
+
     exit 1
 fi
 
 echo "[ OK ] Samaritan speech service uploaded."
+echo
+
+echo "[INFO] Uploading Ollama Modelfile..."
+
+if ! scp -P "$PI_PORT" \
+    "$OLLAMA_MODEL_FILE" \
+    "$PI_HOST:$REMOTE_OLLAMA_MODEL_FILE"; then
+
+    echo
+    echo "[FAIL] Failed to upload Ollama Modelfile."
+
+    ssh -p "$PI_PORT" "$PI_HOST" \
+        "rm -rf '$REMOTE_STAGE2_DIR'" >/dev/null 2>&1 || true
+
+    exit 1
+fi
+
+echo "[ OK ] Ollama Modelfile uploaded."
+echo
+
+echo "[INFO] Uploading Samaritan Ollama model service..."
+
+if ! scp -P "$PI_PORT" \
+    "$OLLAMA_MODEL_SERVICE_FILE" \
+    "$PI_HOST:$REMOTE_OLLAMA_MODEL_SERVICE"; then
+
+    echo
+    echo "[FAIL] Failed to upload Samaritan Ollama model service."
+
+    ssh -p "$PI_PORT" "$PI_HOST" \
+        "rm -rf '$REMOTE_STAGE2_DIR'" >/dev/null 2>&1 || true
+
+    exit 1
+fi
+
+echo "[ OK ] Samaritan Ollama model service uploaded."
+echo
+
+echo "[INFO] Uploading Samaritan Ollama model loader..."
+
+if ! scp -P "$PI_PORT" \
+    "$OLLAMA_LOAD_SCRIPT_FILE" \
+    "$PI_HOST:$REMOTE_OLLAMA_LOAD_SCRIPT"; then
+
+    echo
+    echo "[FAIL] Failed to upload Samaritan Ollama model loader."
+
+    ssh -p "$PI_PORT" "$PI_HOST" \
+        "rm -rf '$REMOTE_STAGE2_DIR'" >/dev/null 2>&1 || true
+
+    exit 1
+fi
+
+echo "[ OK ] Samaritan Ollama model loader uploaded."
 echo
 
 echo "[INFO] Uploading Samaritan Apache configuration..."
@@ -449,8 +545,10 @@ if ! scp -P "$PI_PORT" \
 
     echo
     echo "[FAIL] Failed to upload Samaritan Apache configuration."
+
     ssh -p "$PI_PORT" "$PI_HOST" \
         "rm -rf '$REMOTE_STAGE2_DIR'" >/dev/null 2>&1 || true
+
     exit 1
 fi
 
@@ -469,14 +567,16 @@ if ! ssh -p "$PI_PORT" "$PI_HOST" "
 
     echo
     echo "[FAIL] Stage 2 installation failed."
+
     ssh -p "$PI_PORT" "$PI_HOST" \
         "rm -rf '$REMOTE_STAGE2_DIR'" >/dev/null 2>&1 || true
+
     exit 1
 fi
 
 echo "[ OK ] Stage 2 completed successfully."
-
 echo
+
 echo "=============================================="
 echo "Samaritan Installation Complete"
 echo "=============================================="
@@ -500,6 +600,7 @@ echo
 
 echo "Samaritan is ready for deployment."
 echo
+
 echo "Run:"
 echo
 echo "  ./deploy.sh"

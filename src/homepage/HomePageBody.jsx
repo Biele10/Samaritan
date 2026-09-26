@@ -68,12 +68,12 @@ function redLedButton()
 
 function yes()
 {
-  put('hardware/yesLed/power');
+  put('hardware/yesLed/flash');
 }
 
 function no()
 {
-  put('hardware/noLed/power');
+  put('hardware/noLed/flash');
 }
 
 function adjustLighting(e)

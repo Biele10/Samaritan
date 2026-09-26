@@ -12,26 +12,20 @@
  * args:
  * [0] - Time in ms to flash LED for.
  */
-Result Led::flash(uint16_t* args, uint8_t count)
+Result Led::flash(const uint16_t* args, uint8_t count)
 {
-    uint16_t flashTime = 2000; // 2 seconds default
-    uint8_t ardPin = this->getArduinoPin();
-    if (count != 0)
+    this->_flashDuration = 2000;
+    if (count > 0)
     {
-        flashTime = args[0];
+        _flashDuration = args[0];
     }
 
-    if ((this->getState()) == false)
-    {
-        this->setState(true);
-        digitalWrite(ardPin, HIGH);
-    }
+    this->_flashStart = millis();
 
-    delay(flashTime);                              // TEMP THIS IS ONYL FOR TESTING DO NOT ACTUALLY USE THIS THIS BLOCKS WHOLE EVENT LOOP
-    digitalWrite(ardPin, LOW);
-    
-    this->setState(false);
-    return Result::Success("Flashed the LED");
+    this->setState(true);
+    this->setDirty(true);
+
+    return Result::Success("Flashing the LED");
 }
 
 /**
@@ -41,4 +35,23 @@ Result Led::flash(uint16_t* args, uint8_t count)
 void Led::update()
 {
     Hardware::power(this->getState());
+}
+
+/**
+ * Process all aspects of the LED that needs constant processing.
+ */
+void Led::process()
+{
+    if (this->_flashDuration == 0)
+    {
+        return;
+    }
+
+    if (millis() - this->_flashStart >= this->_flashDuration)
+    {
+        this->_flashDuration = 0;
+
+        this->setState(false);
+        this->setDirty(true);
+    }
 }

@@ -2,19 +2,102 @@
 
 namespace Samaritan\services\ai;
 
-Class VoiceCommandService extends \Samaritan\services\Service
+class VoiceCommandService extends \Samaritan\services\Service
 {
     public function sendVoiceCommand(string $command) : array
     {
-        // INSERT LOGIC TO CALL OLLAMA WITH
-        $result = "temp";
-        error_log("COMMAND:\n");
-        error_log($command);exit;
-        if ($result['success'] !== true)
+        $payload = [
+            'model' => 'samaritan',
+            'messages' => [
+                [
+                    'role' => 'user',
+                    'content' => $command
+                ]
+            ],
+            'think' => false, // need quick response
+            'format' => 'json',
+            'stream' => false
+        ];
+
+        $ch = curl_init(\defined('OLLAMA_SERVICE_HOST') ? OLLAMA_SERVICE_HOST : 'http://localhost:11434/api/chat'); // ollama service on pi
+
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json'
+            ],
+            CURLOPT_POSTFIELDS => json_encode($payload)
+        ]);
+
+        $response = curl_exec($ch);
+
+        if ($response === false)
         {
-            return ['success' => false, 'data' => ['message' => 'Failed to send command.']];
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            return [
+                'success' => false,
+                'data' => [
+                    'message' => 'Failed to communicate with Ollama.',
+                    'error'   => $error
+                ]
+            ];
         }
 
-        return ['success' => true, 'data' => ['message' => 'This worked!']];
+        curl_close($ch);
+
+        $response = json_decode($response, true);
+        if ($response === null)
+        {
+            return [
+                'success' => false,
+                'data' => [
+                    'message' => 'Invalid response from Ollama.'
+                ]
+            ];
+        }
+
+        $decision = json_decode($response['message']['content'], true); // ollama decided what endpoint best to use, we now execute it
+        if ($decision === null || !isset($decision['request']))
+        {
+            return [
+                'success' => false,
+                'data' => [
+                    'message' => 'Invalid command returned by Ollama.'
+                ]
+            ];
+        }
+
+        $request = $decision['request'];
+
+        $ch = curl_init('http://localhost' . $request);
+        curl_setopt_array($ch, [
+            CURLOPT_CUSTOMREQUEST => 'PUT',
+            CURLOPT_RETURNTRANSFER => true
+        ]);
+
+        $result = curl_exec($ch);
+        if ($result === false)
+        {
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            return [
+                'success' => false,
+                'data' => [
+                    'message' => 'Failed to execute Samaritan request.',
+                    'error' => $error
+                ]
+            ];
+        }
+
+        curl_close($ch);
+
+        return [
+            'success' => true,
+            'data' => json_decode($result, true)
+        ];
     }
 }

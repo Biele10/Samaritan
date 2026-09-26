@@ -5,9 +5,15 @@
 
 class Led: public Hardware
 {
+    private:
+
+        unsigned long _flashStart = 0;
+        unsigned long _flashDuration = 0;
+
     public:
         using Hardware::Hardware; // inherit constructor from hardware
 
-        Result flash(uint16_t* args, uint8_t count);
+        Result flash(const uint16_t* args, uint8_t count);
         void update() override;
+        void process() override;
 };

@@ -39,29 +39,15 @@ Result EndpointService::onboardLedPower(const uint16_t* args, uint8_t count)
 Result EndpointService::yes(const uint16_t* args, uint8_t count)
 {
     Led& yesLed = this->_ac.getYesLed();
-    if (count > 0 && (args[0] == 1 || args[0] == 0))
-    {
-        yesLed.power(args[0]);
-    }
-    else
-    {
-        yesLed.power();
-    }
-        
-    return Result::Success(); // still need to sort out result stuff lol
+    yesLed.flash(args, count);
+
+    return Result::Success();
 }
 
 Result EndpointService::no(const uint16_t* args, uint8_t count)
 {
     Led& noLed = this->_ac.getNoLed();
-    if (count > 0 && (args[0] == 1 || args[0] == 0))
-    {
-        noLed.power(args[0]);
-    }
-    else
-    {
-        noLed.power();
-    }
-        
-    return Result::Success(); // still need to sort out result stuff lol
+    noLed.flash(args, count);
+
+    return Result::Success();
 }
