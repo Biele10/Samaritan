@@ -4,10 +4,10 @@ namespace Samaritan\controllers\hardware\led;
 
 Class LedController extends \Samaritan\controllers\hardware\HardwareController
 {
-    public function power() : \Samaritan\resources\Response
+    public function power(int $command) : \Samaritan\resources\Response
     {
         $ledService = new \Samaritan\services\hardware\led\LedService();
-        $result = $ledService->power();
+        $result = $ledService->power($command);
 
         $this->data = $result['data'];
 
@@ -17,5 +17,20 @@ Class LedController extends \Samaritan\controllers\hardware\HardwareController
         }
 
         return $this->Success();
+    }
+
+    public function powerRedLed() : \Samaritan\resources\Response
+    {
+        return $this->power(\Samaritan\arduino\Commands::RED_LED_POWER);
+    }
+
+    public function powerYesLed() : \Samaritan\resources\Response
+    {
+        return $this->power(\Samaritan\arduino\Commands::GREEN_LED_FLASH);
+    }
+
+    public function powerNoLed() : \Samaritan\resources\Response
+    {
+        return $this->power(\Samaritan\arduino\Commands::RED_LED_FLASH);
     }
 }

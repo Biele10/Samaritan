@@ -32,6 +32,26 @@ function HomePageBody() {
                 margin: '0 0 15px 0'
             }}
             onSlideReference={adjustLighting}/>
+
+          <Button
+            text="Yes"
+            onClickReference={yes}
+            style=
+            {{
+                minHeight: '100%',
+                margin: '0 0 15px 0'
+            }}
+          />
+
+          <Button
+            text="No"
+            onClickReference={no}
+            style=
+            {{
+                minHeight: '100%',
+                margin: '0 0 15px 0'
+            }}
+          />
     </div>
   );
 }
@@ -44,6 +64,16 @@ function onboardLedButton()
 function redLedButton()
 {
   put('hardware/redLed/power');
+}
+
+function yes()
+{
+  put('hardware/yesLed/power');
+}
+
+function no()
+{
+  put('hardware/noLed/power');
 }
 
 function adjustLighting(e)

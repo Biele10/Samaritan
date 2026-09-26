@@ -33,12 +33,12 @@ bool Hardware::power(const bool state)
 
     if (state == false)
     {
-        digitalWrite(this->getArduinoPin(), HIGH);
+        digitalWrite(this->getArduinoPin(), LOW);
     }
 
     else if (state == true)
     {
-        digitalWrite(this->getArduinoPin(), LOW);
+        digitalWrite(this->getArduinoPin(), HIGH);
     }
 
     this->setState(state);

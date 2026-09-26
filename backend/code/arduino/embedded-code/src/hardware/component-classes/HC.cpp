@@ -2,7 +2,7 @@
 #include "hardware-components/HC.hpp"
 
 HC::HC(const uint8_t dataPin, const uint8_t clockPin, const uint8_t latchPin, const uint8_t maxIndex) : 
-_clockPin(clockPin), _dataPin(dataPin), _latchPin(latchPin), _maxIndex(maxIndex) { this->_updateShiftRegister(); }
+_clockPin(clockPin), _dataPin(dataPin), _latchPin(latchPin), _maxIndex(maxIndex) {}
 
 /**
  * Updates a bit on the class and on the register instantly.

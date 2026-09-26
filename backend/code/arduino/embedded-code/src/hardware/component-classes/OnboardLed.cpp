@@ -16,12 +16,12 @@ bool OnboardLed::power(const bool state)
 {
     if (state == false)
     {
-        digitalWrite(LED_BUILTIN, HIGH);
+        digitalWrite(LED_BUILTIN, LOW);
     }
 
     else if (state == true)
     {
-        digitalWrite(LED_BUILTIN, LOW);
+        digitalWrite(LED_BUILTIN, HIGH);
     }
 
     this->setState(state);

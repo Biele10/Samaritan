@@ -12,8 +12,8 @@
 ArduinoController::ArduinoController(const uint8_t redLedPin, const uint8_t hcDataPin, const uint8_t hcClockPin, const uint8_t hcLatchPin, 
 const uint8_t hcMaxIndex, const uint8_t noLedPin, const uint8_t yesLedPin) : 
   _hc(hcDataPin, hcClockPin, hcLatchPin, hcMaxIndex),
-  _redLed(redLedPin),
-  _onboardLed(),
+  _redLed(redLedPin, NO_PIN, false),
+  _onboardLed(NO_PIN, NO_PIN, false),
   _yesLed(NO_PIN, yesLedPin, false, &_hc),
   _noLed(NO_PIN, noLedPin, false, &_hc)
 {
@@ -36,6 +36,12 @@ void ArduinoController::setupHardware()
   pinMode(Config::HC_DATA_PIN, OUTPUT);
   pinMode(Config::HC_CLOCK_PIN, OUTPUT);
   pinMode(Config::HC_LATCH_PIN, OUTPUT);
+
+  this->getRedLed().power(false);
+  this->getOnBoardLed().power(false);
+  this->getYesLed().power(false);
+  this->getNoLed().power(false);
+  this->getHC().update();
 }
 
 /**
