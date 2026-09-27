@@ -9,17 +9,11 @@
 /**
  * Function that flashes the LED for a given period of time.
  * 
- * args:
- * [0] - Time in ms to flash LED for.
+ * flashDuration - Time in ms to flash LED for.
  */
-Result Led::flash(const uint16_t* args, uint8_t count)
+Result Led::flash(const uint16_t flashDuration) 
 {
-    this->_flashDuration = 2000;
-    if (count > 0)
-    {
-        _flashDuration = args[0];
-    }
-
+    this->_flashDuration = flashDuration;
     this->_flashStart = millis();
 
     this->setState(true);
