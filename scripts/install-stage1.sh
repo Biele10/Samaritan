@@ -97,6 +97,37 @@ apt-get install -y \
     php-zip
 success "Required packages installed."
 
+info "Checking Ollama..."
+
+if command_exists ollama; then
+    success "Ollama is already installed."
+else
+    info "Installing Ollama..."
+
+    curl -fsSL https://ollama.com/install.sh | sh
+
+    command_exists ollama ||
+        die "Ollama installation failed."
+
+    success "Ollama installed."
+fi
+
+info "Checking Ollama service..."
+
+if systemctl is-enabled ollama >/dev/null 2>&1; then
+    success "Ollama service is enabled."
+else
+    systemctl enable ollama
+    success "Ollama service enabled."
+fi
+
+if systemctl is-active ollama >/dev/null 2>&1; then
+    success "Ollama service is running."
+else
+    systemctl start ollama
+    success "Ollama service started."
+fi
+
 info "Checking PHP..."
 command_exists php ||
     die "PHP was not installed."
@@ -139,6 +170,7 @@ REQUIRED_COMMANDS=(
     avrdude
     apache2ctl
     arecord
+    ollama
 )
 
 for command in "${REQUIRED_COMMANDS[@]}"; do
@@ -226,6 +258,7 @@ echo
 echo "Installed:"
 echo "  Apache"
 echo "  PHP"
+echo "  Ollama"
 echo "  g++"
 echo "  ALSA development library"
 echo "  ALSA utilities"

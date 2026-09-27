@@ -11,12 +11,12 @@ $r->addRoute(
 
 $r->addRoute(
     'PUT',
-    '/hardware/yesLed/power',
+    '/hardware/yesLed/flash',
     [LedController::class, 'powerYesLed']
 );
 
 $r->addRoute(
     'PUT',
-    '/hardware/noLed/power',
+    '/hardware/noLed/flash',
     [LedController::class, 'powerNoLed']
 );

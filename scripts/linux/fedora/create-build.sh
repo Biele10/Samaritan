@@ -97,6 +97,16 @@ if [[ ! -f "$ROOT/speech-service/samaritan-speech-service.service" ]]; then
     exit 1
 fi
 
+if [[ ! -f "$ROOT/ollama/Modelfile" ]]; then
+    echo "[FAIL] Ollama Modelfile was not found."
+    exit 1
+fi
+
+if [[ ! -f "$ROOT/ollama/samaritan-model.service" ]]; then
+    echo "[FAIL] Samaritan Ollama model service was not found."
+    exit 1
+fi
+
 echo "[ OK ] package.json found."
 echo "[ OK ] composer.json found."
 echo "[ OK ] platformio.ini found."
@@ -104,6 +114,8 @@ echo "[ OK ] speech.cpp found."
 echo "[ OK ] processTranscription.cpp found."
 echo "[ OK ] speech config.hpp found."
 echo "[ OK ] Speech service systemd file found."
+echo "[ OK ] Ollama Modelfile found."
+echo "[ OK ] Samaritan model systemd file found."
 echo
 
 echo "=========================================="
@@ -327,6 +339,32 @@ sudo restorecon -Rv "$BUILD"
 echo
 
 echo "=========================================="
+
+echo "Copying Ollama configuration..."
+
+echo "=========================================="
+
+echo
+
+mkdir -p "$BUILD/ollama"
+
+if ! rsync -a \
+    "$ROOT/ollama/" \
+    "$BUILD/ollama/"; then
+
+    echo
+
+    echo "[FAIL] Ollama configuration copy failed."
+
+    exit 1
+
+fi
+
+echo "[ OK ] Ollama configuration copied."
+
+echo
+
+echo "=========================================="
 echo "Samaritan build created successfully."
 echo "=========================================="
 echo
@@ -340,6 +378,7 @@ echo "public_html/       React application"
 echo "backend/           PHP application"
 echo "daemon/code/       C++ daemon source"
 echo "speech-service/    C++ speech service"
+echo "ollama/            Samaritan AI"
 echo "firmware/          Pre-built Arduino firmware"
 echo
 

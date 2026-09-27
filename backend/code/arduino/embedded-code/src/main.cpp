@@ -40,8 +40,8 @@ void loop()
         cleanUp(parsedPacket); // frees up memory
       }
     }
-
-    ac.process(); // runs code that need to be run every event loop
-    ac.update(); // any state changes we have made can now be updated at the end of the event loop
   }
+
+  ac.process(); // runs code that need to be run every event loop
+  ac.update(); // any state changes we have made can now be updated at the end of the event loop
 }

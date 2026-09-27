@@ -50,7 +50,7 @@ void ArduinoController::setupHardware()
 void ArduinoController::process()
 {
   for (Hardware* hardware : this->_hardwareArray)
-  {
+  { 
     hardware->process();
   }
 }
