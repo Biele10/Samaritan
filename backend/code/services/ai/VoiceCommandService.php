@@ -48,7 +48,6 @@ class VoiceCommandService extends \Samaritan\services\Service
 
         curl_close($ch);
 
-        $response = json_decode($response, true);
         if ($response === null)
         {
             return [
@@ -57,10 +56,16 @@ class VoiceCommandService extends \Samaritan\services\Service
                     'message' => 'Invalid response from Ollama.'
                 ]
             ];
-        }
+        }        
 
-        $decision = json_decode($response['message']['content'], true); // ollama decided what endpoint best to use, we now execute it
-        if ($decision === null || !isset($decision['request']))
+        $action = trim($response);
+        $availableRoutes = [
+            '1' => '/api/hardware/redLed/power',
+            '2' => '/api/hardware/yesLed/flash',
+            '3' => '/api/hardware/noLed/flash'
+        ];
+
+        if (!isset($availableRoutes[$action]))
         {
             return [
                 'success' => false,
@@ -70,34 +75,36 @@ class VoiceCommandService extends \Samaritan\services\Service
             ];
         }
 
-        $request = $decision['request'];
+        $request = $availableRoutes[$action];
 
         $ch = curl_init('http://localhost' . $request);
+
         curl_setopt_array($ch, [
             CURLOPT_CUSTOMREQUEST => 'PUT',
             CURLOPT_RETURNTRANSFER => true
         ]);
 
-        $result = curl_exec($ch);
-        if ($result === false)
-        {
-            $error = curl_error($ch);
+            $result = curl_exec($ch);
+            if ($result === false)
+            {
+                $error = curl_error($ch);
+                curl_close($ch);
+
+                return [
+                    'success' => false,
+                    'data' => [
+                        'message' => 'Failed to execute Samaritan request.',
+                        'error' => $error
+                    ]
+                ];
+            }
+
             curl_close($ch);
 
             return [
-                'success' => false,
-                'data' => [
-                    'message' => 'Failed to execute Samaritan request.',
-                    'error' => $error
-                ]
+                'success' => true,
+                'data' => json_decode($result, true)
             ];
         }
-
-        curl_close($ch);
-
-        return [
-            'success' => true,
-            'data' => json_decode($result, true)
-        ];
     }
 }
