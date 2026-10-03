@@ -2,20 +2,19 @@
 #include <cstdint>
 #include <cctype>
 #include <cstring>
-#include <thread>
 
 #include <alsa/asoundlib.h>
 #include <vosk_api.h>
+#include <curl/curl.h>
 
 #include "config/config.hpp"
-#include "transcription.hpp"
+#include "processTranscription.hpp"
 
-STATE cycleState = STATE::WAKE_WORD_INACTIVE; // this is used to determine which transcribed audio needs to be sent to the PHP which will then call Ollama
+SpeechState cycleState = SpeechState::WAKE_WORD_INACTIVE; // this is used to determine which transcribed audio needs to be sent to the PHP which will then call Ollama
 
 VoskModel* model;
 VoskRecognizer* recognizer;
 snd_pcm_t* pcm; // represents handle for our audio stream
-
 
 void partialToLower(const char* partial, char* loweredPartial)
 {
@@ -38,6 +37,45 @@ bool containsWakeWord(const char* partial)
     partialToLower(partial, loweredPartial);
 
     return strstr(loweredPartial, WAKE_WORD) != nullptr;
+}
+
+char* extractText(const char* result)
+{
+    const char* start = strstr(result, "\"text\"");
+
+    if (start == nullptr)
+    {
+        return nullptr;
+    }
+
+    start = strchr(start, ':');
+
+    if (start == nullptr)
+    {
+        return nullptr;
+    }
+
+    start++;
+
+    while (*start == ' ' || *start == '\t' || *start == '"')
+    {
+        start++;
+    }
+
+    const char* end = strchr(start, '"');
+
+    if (end == nullptr)
+    {
+        return nullptr;
+    }
+
+    size_t length = end - start;
+    char* text = new char[length + 1];
+
+    strncpy(text, start, length);
+    text[length] = '\0';
+
+    return text;
 }
 
 bool setup()
@@ -101,6 +139,8 @@ bool setup()
         return false;
     }
 
+    curl_global_init(CURL_GLOBAL_ALL); // get curl set up for later requests
+
     return true;
 }
 
@@ -147,10 +187,17 @@ int main()
 
         if (final)
         {
-            if (cycleState == STATE::WAKE_WORD_ACTIVE) // this sentence was being recorded, we can send this elsewhere to be processed
+            if (cycleState == SpeechState::WAKE_WORD_ACTIVE) // this sentence was being recorded, we can send this elsewhere to be processed
             {
-                std::thread(process, vosk_recognizer_result(recognizer)).detach(); // calls the transcription processor and carries on with the rest of the service
-                cycleState = STATE::WAKE_WORD_INACTIVE; // cycle state now back in normal inactive state, audio input will not be recorded until wake word is spoken again
+                const char* result = vosk_recognizer_result(recognizer);
+                char* command = extractText(result);
+
+                if (command != nullptr)
+                {
+                    process(command); // calls the transcription processor
+                }
+
+                cycleState = SpeechState::WAKE_WORD_INACTIVE; // cycle state now back in normal inactive state, audio input will not be recorded until wake word is spoken again
             }
 
             std::cout << vosk_recognizer_result(recognizer) << std::endl;
@@ -161,7 +208,7 @@ int main()
             const char* partialResult = vosk_recognizer_partial_result(recognizer);
             if (containsWakeWord(partialResult))
             {
-                cycleState = STATE::WAKE_WORD_ACTIVE; // we heard the wake word, everything in this utterance should be recorded
+                cycleState = SpeechState::WAKE_WORD_ACTIVE; // we heard the wake word, everything in this utterance should be recorded
                 std::cout << "Wake word: " << WAKE_WORD << " was called, recording rest of sentence." << std::endl;
             }
 
@@ -173,6 +220,7 @@ int main()
     vosk_recognizer_free(recognizer);
     vosk_model_free(model);
     snd_pcm_close(pcm);
+    curl_global_cleanup();
 
     return 0;
 }

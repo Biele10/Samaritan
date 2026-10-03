@@ -5,3 +5,4 @@
 require __DIR__ . '/hardware/Hardware.php';
 require __DIR__ . '/hardware/led/Led.php';
 require __DIR__ . '/hardware/led/OnBoardLed.php';
+require __DIR__ . '/ai/VoiceCommand.php';

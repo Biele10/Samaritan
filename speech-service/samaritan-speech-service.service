@@ -1,6 +1,7 @@
 [Unit]
 Description=Samaritan speech recognition service
-After=network.target
+After=network.target samaritan-model.service
+Requires=samaritan-model.service
 
 [Service]
 Type=simple

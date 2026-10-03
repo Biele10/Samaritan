@@ -4,20 +4,26 @@
 #include "structures/HashTable.hpp"
 #include "config/config.hpp"
 
-OnboardLed::OnboardLed(bool initialState) : _state(initialState) {};
-
-Result OnboardLed::power(uint16_t* args, uint8_t count)
+bool OnboardLed::power()
 {
-    if ((this->_state) == false)
-    {
-        digitalWrite(LED_BUILTIN, HIGH);
-    }
+    return this->power(!this->getState());
+}
 
-    else if ((this->_state) == true)
+/**
+ * Function that turns a component on or off.
+ */
+bool OnboardLed::power(const bool state)
+{
+    if (state == false)
     {
         digitalWrite(LED_BUILTIN, LOW);
     }
 
-    this->_state = !(this->_state);
-    return Result::Success("Changed state of onboard LED.");
+    else if (state == true)
+    {
+        digitalWrite(LED_BUILTIN, HIGH);
+    }
+
+    this->setState(state);
+    return true;
 }

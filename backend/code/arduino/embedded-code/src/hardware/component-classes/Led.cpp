@@ -1,59 +1,51 @@
 #include <Arduino.h>
+#include "hardware-components/Hardware.hpp"
 #include "hardware-components/Led.hpp"
 #include "output/Result.hpp"
 #include "structures/HashTable.hpp"
 #include "config/config.hpp"
-
-Led::Led(int pinNumber, bool initialState) : _pin(pinNumber), _state(initialState) {};
-
-/**
- * Function that turns the LED on or off, this
- * is only used via the website because the website does not
- * have a way of tracking the state of the LED.
- */
-Result Led::power(uint16_t* args, uint8_t count)
-{
-    if ((this->_state) == false)
-    {
-        digitalWrite(_pin, HIGH);
-    }
-
-    else if ((this->_state) == true)
-    {
-        digitalWrite(_pin, LOW);
-    }
-
-    this->_state = !(this->_state);
-    return Result::Success("Changed state of the LED");
-}
-
-// The on and off functions are used internally for specific behaviour
-// as current state of the LED can easily be tracked.
+#include "hardware-components/HC.hpp"
 
 /**
- * Turns LED on.
+ * Function that flashes the LED for a given period of time.
+ * 
+ * flashDuration - Time in ms to flash LED for.
  */
-Result Led::_on()
+Result Led::flash(const uint16_t flashDuration) 
 {
-    if ((this->_state) == false)             // these state checks are done to avoid unecessary digitalWrites
-    {
-        digitalWrite(_pin, HIGH);
-    }
+    this->_flashDuration = flashDuration;
+    this->_flashStart = millis();
 
-    this->_state = !(this->_state);
-    return Result::Success("Turned LED on.");
+    this->setState(true);
+    this->setDirty(true);
+
+    return Result::Success("Flashing the LED");
 }
 
 /**
- * Turns LED off.
+ * Updates all physical aspects of the LED.
+ * This is called at the end of a process loop.
  */
-Result Led::_off()
+void Led::update()
 {
-    if ((this->_state) == true)
+    Hardware::power(this->getState());
+}
+
+/**
+ * Process all aspects of the LED that needs constant processing.
+ */
+void Led::process()
+{
+    if (this->_flashDuration == 0)
     {
-        digitalWrite(_pin, LOW);
+        return;
     }
 
-    this->_state = !(this->_state);
-    return Result::Success("Turned LED off.");
+    if (millis() - this->_flashStart >= this->_flashDuration)
+    {
+        this->_flashDuration = 0;
+
+        this->setState(false);
+        this->setDirty(true);
+    }
 }

@@ -36,3 +36,6 @@ yarn-error.log*
 #configs
 /backend/vendor/
 /backend/code/config/
+
+#directory
+.directory
