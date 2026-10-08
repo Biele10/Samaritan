@@ -1,7 +1,7 @@
 @echo off
-setlocal
+setlocal EnableExtensions
 
-set "ROOT=%~dp0"
+set "SCRIPT_DIR=%~dp0"
 
 echo.
 echo ==========================================
@@ -9,8 +9,7 @@ echo Samaritan - Full Deployment
 echo ==========================================
 echo.
 
-call "%ROOT%create-build.bat"
-
+call "%SCRIPT_DIR%create-build.bat"
 if errorlevel 1 (
     echo.
     echo ==========================================
@@ -20,8 +19,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-call "%ROOT%build-upload.bat"
-
+call "%SCRIPT_DIR%build-upload.bat"
 if errorlevel 1 (
     echo.
     echo ==========================================
@@ -32,11 +30,8 @@ if errorlevel 1 (
 
 echo.
 echo ==========================================
-echo.
-echo [1;32mSamaritan deployment complete.[0m
-echo.
+echo Samaritan deployment complete.
 echo ==========================================
 echo.
 
-endlocal
 exit /b 0
