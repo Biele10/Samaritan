@@ -4,7 +4,7 @@ namespace Samaritan\services\ai;
 
 class VoiceCommandService extends \Samaritan\services\Service
 {
-    public function sendVoiceCommand(string $command) : array
+    public function sendVoiceCommand(string $command): array
     {
         $payload = [
             'model' => 'samaritan',
@@ -14,12 +14,18 @@ class VoiceCommandService extends \Samaritan\services\Service
                     'content' => $command
                 ]
             ],
-            'think' => false, // need quick response
-            'format' => 'json',
-            'stream' => false
+            'think' => false,
+            'stream' => false,
+            'options' => [
+                'num_predict' => 1
+            ]
         ];
 
-        $ch = curl_init(\defined('OLLAMA_SERVICE_HOST') ? OLLAMA_SERVICE_HOST : 'http://localhost:11434/api/chat'); // ollama service on pi
+        $ch = curl_init(
+            defined('OLLAMA_SERVICE_HOST')
+                ? OLLAMA_SERVICE_HOST
+                : 'http://localhost:11434/api/chat'
+        );
 
         curl_setopt_array($ch, [
             CURLOPT_POST => true,
@@ -41,14 +47,16 @@ class VoiceCommandService extends \Samaritan\services\Service
                 'success' => false,
                 'data' => [
                     'message' => 'Failed to communicate with Ollama.',
-                    'error'   => $error
+                    'error' => $error
                 ]
             ];
         }
 
         curl_close($ch);
 
-        if ($response === null)
+        $ollamaResponse = json_decode($response, true);
+
+        if (!is_array($ollamaResponse))
         {
             return [
                 'success' => false,
@@ -56,9 +64,20 @@ class VoiceCommandService extends \Samaritan\services\Service
                     'message' => 'Invalid response from Ollama.'
                 ]
             ];
-        }        
+        }
 
-        $action = trim($response);
+        if (!isset($ollamaResponse['message']['content']))
+        {
+            return [
+                'success' => false,
+                'data' => [
+                    'message' => 'Ollama response did not contain a message.'
+                ]
+            ];
+        }
+
+        $action = trim($ollamaResponse['message']['content']);
+
         $availableRoutes = [
             '1' => '/api/hardware/redLed/power',
             '2' => '/api/hardware/yesLed/flash',
@@ -70,7 +89,8 @@ class VoiceCommandService extends \Samaritan\services\Service
             return [
                 'success' => false,
                 'data' => [
-                    'message' => 'Invalid command returned by Ollama.'
+                    'message' => 'Invalid command returned by Ollama.',
+                    'action' => $action
                 ]
             ];
         }
@@ -84,27 +104,27 @@ class VoiceCommandService extends \Samaritan\services\Service
             CURLOPT_RETURNTRANSFER => true
         ]);
 
-            $result = curl_exec($ch);
-            if ($result === false)
-            {
-                $error = curl_error($ch);
-                curl_close($ch);
+        $result = curl_exec($ch);
 
-                return [
-                    'success' => false,
-                    'data' => [
-                        'message' => 'Failed to execute Samaritan request.',
-                        'error' => $error
-                    ]
-                ];
-            }
-
+        if ($result === false)
+        {
+            $error = curl_error($ch);
             curl_close($ch);
 
             return [
-                'success' => true,
-                'data' => json_decode($result, true)
+                'success' => false,
+                'data' => [
+                    'message' => 'Failed to execute Samaritan request.',
+                    'error' => $error
+                ]
             ];
         }
+
+        curl_close($ch);
+
+        return [
+            'success' => true,
+            'data' => json_decode($result, true)
+        ];
     }
 }
