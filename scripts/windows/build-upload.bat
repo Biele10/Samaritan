@@ -1,35 +1,37 @@
 @echo off
-setlocal EnableDelayedExpansion
+setlocal EnableExtensions EnableDelayedExpansion
 
-set "ROOT=%~dp0.."
+set "SCRIPT_DIR=%~dp0"
+set "ROOT=%SCRIPT_DIR%..\.."
+for %%A in ("%ROOT%") do set "ROOT=%%~fA"
 
+set "PI_WEB=/var/www/Samaritan"
+set "LOCAL_BUILD=%ROOT%\Samaritan-Build"
+
+set "PI_HOST=ubuntu@192.168.1.88"
+set /p "INPUT_PI_HOST=Enter Raspberry Pi SSH host [%PI_HOST%]: "
+if not "!INPUT_PI_HOST!"=="" set "PI_HOST=!INPUT_PI_HOST!"
+
+set "PI_PORT=22"
+set /p "INPUT_PI_PORT=Enter SSH port [%PI_PORT%]: "
+if not "!INPUT_PI_PORT!"=="" set "PI_PORT=!INPUT_PI_PORT!"
+
+echo.
+echo Raspberry Pi:
+echo Host: %PI_HOST%
+echo Port: %PI_PORT%
 echo.
 echo ==========================================
 echo Samaritan - Build and Upload
 echo ==========================================
 echo.
 
-set "PI_HOST=ubuntu@192.168.1.88"
-set /p "PI_HOST=Enter Raspberry Pi SSH host [ubuntu@192.168.1.88]: "
-
-set "PI_PORT=22"
-set /p "PI_PORT=Enter SSH port [22]: "
-
-echo.
-echo Raspberry Pi:
-echo   Host: %PI_HOST%
-echo   Port: %PI_PORT%
-echo.
-
-set "PI_WEB=/var/www/Samaritan"
-set "LOCAL_BUILD=%ROOT%\Samaritan-Build"
-
 where ssh >nul 2>&1
 if errorlevel 1 (
     echo.
     echo [FAIL] OpenSSH client was not found.
     echo.
-    echo Install/enable the Windows OpenSSH Client and try again.
+    echo Install OpenSSH and try again.
     exit /b 1
 )
 
@@ -38,7 +40,7 @@ if errorlevel 1 (
     echo.
     echo [FAIL] SCP was not found.
     echo.
-    echo Install/enable the Windows OpenSSH Client and try again.
+    echo Install OpenSSH and try again.
     exit /b 1
 )
 
@@ -106,7 +108,33 @@ if not exist "%LOCAL_BUILD%\speech-service\samaritan-speech-service.service" (
 )
 
 echo [ OK ] Speech service found.
+echo.
 
+if not exist "%LOCAL_BUILD%\ollama" (
+    echo.
+    echo [FAIL] Ollama configuration was not found.
+    echo.
+    echo Run create-build.bat first.
+    exit /b 1
+)
+
+if not exist "%LOCAL_BUILD%\ollama\Modelfile" (
+    echo.
+    echo [FAIL] Ollama Modelfile was not found.
+    echo.
+    echo Run create-build.bat first.
+    exit /b 1
+)
+
+if not exist "%LOCAL_BUILD%\ollama\samaritan-model.service" (
+    echo.
+    echo [FAIL] Samaritan model service was not found.
+    echo.
+    echo Run create-build.bat first.
+    exit /b 1
+)
+
+echo [ OK ] Ollama configuration found.
 echo.
 echo ==========================================
 echo Checking Arduino configuration...
@@ -115,8 +143,7 @@ echo.
 
 set "CONFIGURED=0"
 
-ssh -p "%PI_PORT%" "%PI_HOST%" "if [ -f %PI_WEB%/daemon/code/config.hpp ] && grep -q 'SERIAL_PATH' %PI_WEB%/daemon/code/config.hpp && ! grep -q '{{SERIAL_PATH}}' %PI_WEB%/daemon/code/config.hpp; then exit 0; else exit 1; fi"
-
+ssh -p "%PI_PORT%" "%PI_HOST%" "if [ -f '%PI_WEB%/daemon/code/config.hpp' ] && grep -q 'SERIAL_PATH' '%PI_WEB%/daemon/code/config.hpp'; then if grep -q '{{SERIAL_PATH}}' '%PI_WEB%/daemon/code/config.hpp'; then exit 1; else exit 0; fi; else exit 1; fi"
 if not errorlevel 1 (
     set "CONFIGURED=1"
     echo [ OK ] Existing Arduino configuration found.
@@ -134,8 +161,7 @@ echo.
 
 set "SPEECH_CONFIGURED=0"
 
-ssh -p "%PI_PORT%" "%PI_HOST%" "if [ -f %PI_WEB%/speech-service/code/config/config.hpp ] && grep -q 'ALSA_INPUT_NAME' %PI_WEB%/speech-service/code/config/config.hpp && grep -q 'VOSK_MODEL_LOCATION' %PI_WEB%/speech-service/code/config/config.hpp && grep -q 'WAKE_WORD' %PI_WEB%/speech-service/code/config/config.hpp && grep -q 'PARTIAL_FIRST_LETTER_INDEX' %PI_WEB%/speech-service/code/config/config.hpp && grep -q 'END_OF_PARTIAL' %PI_WEB%/speech-service/code/config/config.hpp && grep -q 'SPEECH_CHAR_CAP' %PI_WEB%/speech-service/code/config/config.hpp && grep -q 'enum class SpeechState' %PI_WEB%/speech-service/code/config/config.hpp && ! grep -q '{{ALSA_INPUT_NAME}}' %PI_WEB%/speech-service/code/config/config.hpp && ! grep -q '{{VOSK_MODEL_LOCATION}}' %PI_WEB%/speech-service/code/config/config.hpp; then exit 0; else exit 1; fi"
-
+ssh -p "%PI_PORT%" "%PI_HOST%" "if [ -f '%PI_WEB%/speech-service/code/config/config.hpp' ] && grep -q 'ALSA_INPUT_NAME' '%PI_WEB%/speech-service/code/config/config.hpp' && grep -q 'VOSK_MODEL_LOCATION' '%PI_WEB%/speech-service/code/config/config.hpp' && grep -q 'WAKE_WORD' '%PI_WEB%/speech-service/code/config/config.hpp' && grep -q 'PARTIAL_FIRST_LETTER_INDEX' '%PI_WEB%/speech-service/code/config/config.hpp' && grep -q 'END_OF_PARTIAL' '%PI_WEB%/speech-service/code/config/config.hpp' && grep -q 'SPEECH_CHAR_CAP' '%PI_WEB%/speech-service/code/config/config.hpp' && grep -q 'enum class SpeechState' '%PI_WEB%/speech-service/code/config/config.hpp'; then if grep -q '{{ALSA_INPUT_NAME}}' '%PI_WEB%/speech-service/code/config/config.hpp'; then exit 1; elif grep -q '{{VOSK_MODEL_LOCATION}}' '%PI_WEB%/speech-service/code/config/config.hpp'; then exit 1; else exit 0; fi; else exit 1; fi"
 if not errorlevel 1 (
     set "SPEECH_CONFIGURED=1"
     echo [ OK ] Complete existing speech configuration found.
@@ -148,30 +174,24 @@ if not errorlevel 1 (
 if "!CONFIGURED!"=="1" (
     echo.
     echo [INFO] Preserving existing Arduino config.hpp...
-
-    ssh -p "%PI_PORT%" "%PI_HOST%" "sudo cp %PI_WEB%/daemon/code/config.hpp /home/ubuntu/samaritan-config-existing.hpp"
-
+    ssh -p "%PI_PORT%" "%PI_HOST%" "sudo cp '%PI_WEB%/daemon/code/config.hpp' '/home/ubuntu/samaritan-config-existing.hpp'"
     if errorlevel 1 (
         echo.
         echo [FAIL] Failed to preserve existing Arduino config.hpp.
         exit /b 1
     )
-
     echo [ OK ] Existing Arduino config.hpp preserved.
 )
 
 if "!SPEECH_CONFIGURED!"=="1" (
     echo.
     echo [INFO] Preserving existing speech config.hpp...
-
-    ssh -p "%PI_PORT%" "%PI_HOST%" "sudo cp %PI_WEB%/speech-service/code/config/config.hpp /home/ubuntu/samaritan-speech-config-existing.hpp"
-
+    ssh -p "%PI_PORT%" "%PI_HOST%" "sudo cp '%PI_WEB%/speech-service/code/config/config.hpp' '/home/ubuntu/samaritan-speech-config-existing.hpp'"
     if errorlevel 1 (
         echo.
         echo [FAIL] Failed to preserve existing speech config.hpp.
         exit /b 1
     )
-
     echo [ OK ] Existing speech config.hpp preserved.
 )
 
@@ -182,30 +202,22 @@ echo ==========================================
 echo.
 
 echo [INFO] Stopping Samaritan services...
-
-ssh -p "%PI_PORT%" "%PI_HOST%" "sudo systemctl stop samaritan-daemon 2>/dev/null || true; sudo systemctl stop samaritan-speech-service 2>/dev/null || true"
-
+ssh -p "%PI_PORT%" "%PI_HOST%" "sudo systemctl stop samaritan-daemon 2>/dev/null || true; sudo systemctl stop samaritan-speech-service 2>/dev/null || true; sudo systemctl stop samaritan-model.service 2>/dev/null || true; ollama stop samaritan 2>/dev/null || true"
 if errorlevel 1 (
     echo.
     echo [FAIL] Failed to stop Samaritan services.
     exit /b 1
 )
-
 echo [ OK ] Samaritan services stopped.
-
 echo.
 echo [INFO] Replacing deployment directory...
-
-ssh -p "%PI_PORT%" "%PI_HOST%" "sudo rm -rf %PI_WEB% && sudo mkdir -p %PI_WEB% && sudo chown ubuntu:ubuntu %PI_WEB% && sudo chmod 755 %PI_WEB%"
-
+ssh -p "%PI_PORT%" "%PI_HOST%" "sudo rm -rf '%PI_WEB%' && sudo mkdir -p '%PI_WEB%' && sudo chown ubuntu:ubuntu '%PI_WEB%' && sudo chmod 755 '%PI_WEB%'"
 if errorlevel 1 (
     echo.
     echo [FAIL] Failed to prepare Samaritan deployment directory.
     exit /b 1
 )
-
 echo [ OK ] Deployment directory prepared.
-
 echo.
 echo ==========================================
 echo Uploading Samaritan...
@@ -213,7 +225,6 @@ echo ==========================================
 echo.
 
 scp -P "%PI_PORT%" -r "%LOCAL_BUILD%\." "%PI_HOST%:%PI_WEB%/"
-
 if errorlevel 1 (
     echo.
     echo [FAIL] Failed to deploy Samaritan.
@@ -222,21 +233,18 @@ if errorlevel 1 (
 
 echo.
 echo [ OK ] Samaritan deployed.
-
 echo.
 echo ==========================================
 echo Adjusting deployment permissions...
 echo ==========================================
 echo.
 
-ssh -p "%PI_PORT%" "%PI_HOST%" "sudo chmod -R a+rX %PI_WEB%"
-
+ssh -p "%PI_PORT%" "%PI_HOST%" "sudo chmod -R a+rX '%PI_WEB%'"
 if errorlevel 1 (
     echo.
     echo [FAIL] Failed to set deployment permissions.
     exit /b 1
 )
-
 echo [ OK ] Deployment permissions configured.
 
 if "!CONFIGURED!"=="1" (
@@ -245,15 +253,12 @@ if "!CONFIGURED!"=="1" (
     echo Restoring Arduino configuration...
     echo ==========================================
     echo.
-
-    ssh -p "%PI_PORT%" "%PI_HOST%" "sudo mv /home/ubuntu/samaritan-config-existing.hpp %PI_WEB%/daemon/code/config.hpp"
-
+    ssh -p "%PI_PORT%" "%PI_HOST%" "sudo mv '/home/ubuntu/samaritan-config-existing.hpp' '%PI_WEB%/daemon/code/config.hpp'"
     if errorlevel 1 (
         echo.
         echo [FAIL] Failed to restore Arduino config.hpp.
         exit /b 1
     )
-
     echo [ OK ] Existing Arduino config.hpp restored.
 )
 
@@ -263,31 +268,59 @@ if "!SPEECH_CONFIGURED!"=="1" (
     echo Restoring speech configuration...
     echo ==========================================
     echo.
-
-    ssh -p "%PI_PORT%" "%PI_HOST%" "sudo mv /home/ubuntu/samaritan-speech-config-existing.hpp %PI_WEB%/speech-service/code/config/config.hpp"
-
+    ssh -p "%PI_PORT%" "%PI_HOST%" "sudo mv '/home/ubuntu/samaritan-speech-config-existing.hpp' '%PI_WEB%/speech-service/code/config/config.hpp'"
     if errorlevel 1 (
         echo.
         echo [FAIL] Failed to restore speech config.hpp.
         exit /b 1
     )
-
     echo [ OK ] Existing speech config.hpp restored.
 )
 
+echo.
+echo ==========================================
+echo Installing Samaritan model service...
+echo ==========================================
+echo.
+
+ssh -p "%PI_PORT%" "%PI_HOST%" "sudo install -o root -g root -m 644 '%PI_WEB%/ollama/samaritan-model.service' /etc/systemd/system/samaritan-model.service && sudo systemctl daemon-reload && sudo systemctl enable samaritan-model.service"
+if errorlevel 1 (
+    echo.
+    echo [FAIL] Failed to install Samaritan model service.
+    exit /b 1
+)
+echo [ OK ] Samaritan model service installed.
+echo.
+echo ==========================================
+echo Installing Samaritan speech service...
+echo ==========================================
+echo.
+
+ssh -p "%PI_PORT%" "%PI_HOST%" "sudo install -o root -g root -m 644 '%PI_WEB%/speech-service/samaritan-speech-service.service' /etc/systemd/system/samaritan-speech-service.service && sudo systemctl daemon-reload && sudo systemctl enable samaritan-speech-service.service"
+if errorlevel 1 (
+    echo.
+    echo [FAIL] Failed to install Samaritan speech service.
+    exit /b 1
+)
+echo [ OK ] Samaritan speech service installed.
 echo.
 echo ==========================================
 echo Detecting Arduino...
 echo ==========================================
 echo.
 
+set "ARDUINO_OUTPUT=%TEMP%\samaritan-arduino-%RANDOM%.txt"
+ssh -p "%PI_PORT%" "%PI_HOST%" "find /dev/serial/by-id -maxdepth 1 -type l -name '*Arduino*' -print 2>/dev/null || true" > "%ARDUINO_OUTPUT%"
+
 set "ARDUINO_COUNT=0"
 set "ARDUINO_SERIAL="
 
-for /f "delims=" %%A in ('ssh -p "%PI_PORT%" "%PI_HOST%" "find /dev/serial/by-id -maxdepth 1 -type l -name '*Arduino*' -print"') do (
+for /f "usebackq delims=" %%A in ("%ARDUINO_OUTPUT%") do (
     set /a ARDUINO_COUNT+=1
     set "ARDUINO_SERIAL=%%A"
 )
+
+del /q "%ARDUINO_OUTPUT%" >nul 2>&1
 
 if "!ARDUINO_COUNT!"=="0" (
     echo.
@@ -302,9 +335,7 @@ if not "!ARDUINO_COUNT!"=="1" (
     echo [FAIL] Multiple Arduino devices were detected.
     echo.
     echo Detected devices:
-
-    ssh -p "%PI_PORT%" "%PI_HOST%" "find /dev/serial/by-id -maxdepth 1 -type l -name '*Arduino*' -print"
-
+    ssh -p "%PI_PORT%" "%PI_HOST%" "find /dev/serial/by-id -maxdepth 1 -type l -name '*Arduino*' -print 2>/dev/null || true"
     echo.
     echo Please leave only one Arduino connected and try again.
     exit /b 1
@@ -320,27 +351,19 @@ if "!CONFIGURED!"=="0" (
     echo ==========================================
     echo.
 
-    set "CONFIG_FILE=%TEMP%\samaritan-config.hpp"
+    set "CONFIG_FILE=%TEMP%\samaritan-config-!RANDOM!.hpp"
 
-    (
-        echo #pragma once
-        echo.
-        echo constexpr const char* SERIAL_PATH = "!ARDUINO_SERIAL!";
-        echo.
-        echo constexpr const char* SOCKET_PATH = "/run/samaritan/samaritan.sock";
-    ) > "!CONFIG_FILE!"
-
-    if errorlevel 1 (
-        echo.
-        echo [FAIL] Failed to generate temporary Arduino config.hpp.
-        exit /b 1
-    )
+    >"!CONFIG_FILE!" echo #pragma once
+    >>"!CONFIG_FILE!" echo.
+    >>"!CONFIG_FILE!" echo constexpr const char* SERIAL_PATH = "!ARDUINO_SERIAL!";
+    >>"!CONFIG_FILE!" echo.
+    >>"!CONFIG_FILE!" echo constexpr const char* SOCKET_PATH = "/run/samaritan/samaritan.sock";
+    >>"!CONFIG_FILE!" echo.
 
     echo [ OK ] Temporary Arduino config.hpp generated.
     echo [INFO] Uploading Arduino config.hpp...
 
     scp -P "%PI_PORT%" "!CONFIG_FILE!" "%PI_HOST%:/home/ubuntu/samaritan-config.hpp"
-
     if errorlevel 1 (
         echo.
         echo [FAIL] Failed to upload Arduino config.hpp.
@@ -351,8 +374,7 @@ if "!CONFIGURED!"=="0" (
     echo [ OK ] Arduino config.hpp uploaded.
     echo [INFO] Installing Arduino config.hpp...
 
-    ssh -p "%PI_PORT%" "%PI_HOST%" "sudo mv /home/ubuntu/samaritan-config.hpp %PI_WEB%/daemon/code/config.hpp"
-
+    ssh -p "%PI_PORT%" "%PI_HOST%" "sudo mv '/home/ubuntu/samaritan-config.hpp' '%PI_WEB%/daemon/code/config.hpp'"
     if errorlevel 1 (
         echo.
         echo [FAIL] Failed to install Arduino config.hpp.
@@ -361,7 +383,6 @@ if "!CONFIGURED!"=="0" (
     )
 
     del /q "!CONFIG_FILE!" >nul 2>&1
-
     echo [ OK ] Arduino config.hpp installed.
 )
 
@@ -372,13 +393,18 @@ if "!SPEECH_CONFIGURED!"=="0" (
     echo ==========================================
     echo.
 
+    set "MIC_OUTPUT=%TEMP%\samaritan-mic-!RANDOM!.txt"
+    ssh -p "%PI_PORT%" "%PI_HOST%" "arecord -L 2>/dev/null | grep '^plughw:CARD=' || true" > "!MIC_OUTPUT!"
+
     set "MIC_COUNT=0"
     set "MIC_NAME="
 
-    for /f "delims=" %%A in ('ssh -p "%PI_PORT%" "%PI_HOST%" "arecord -L" ^| findstr /B /C:"plughw:CARD="') do (
+    for /f "usebackq delims=" %%A in ("!MIC_OUTPUT!") do (
         set /a MIC_COUNT+=1
         set "MIC_NAME=%%A"
     )
+
+    del /q "!MIC_OUTPUT!" >nul 2>&1
 
     if "!MIC_COUNT!"=="0" (
         echo.
@@ -387,7 +413,7 @@ if "!SPEECH_CONFIGURED!"=="0" (
         echo ALSA reported no plughw capture devices.
         echo.
         echo Run:
-        echo   ssh -p "%PI_PORT%" "%PI_HOST%" "arecord -L"
+        echo  ssh -p %PI_PORT% %PI_HOST% "arecord -L"
         echo.
         echo and check that your microphone is connected.
         exit /b 1
@@ -398,9 +424,10 @@ if "!SPEECH_CONFIGURED!"=="0" (
         echo [FAIL] Multiple ALSA capture devices were detected.
         echo.
         echo Detected devices:
-
+        ssh -p "%PI_PORT%" "%PI_HOST%" "arecord -L 2>/dev/null | grep '^plughw:CARD=' || true"
+        echo.
+        echo Complete ALSA device list:
         ssh -p "%PI_PORT%" "%PI_HOST%" "arecord -L"
-
         echo.
         echo Please leave only one microphone connected and try again.
         exit /b 1
@@ -412,7 +439,6 @@ if "!SPEECH_CONFIGURED!"=="0" (
     echo [INFO] Verifying microphone...
 
     ssh -p "%PI_PORT%" "%PI_HOST%" "arecord -D '!MIC_NAME!' -f S16_LE -c 1 -r 16000 -d 1 /dev/null >/dev/null 2>&1"
-
     if errorlevel 1 (
         echo.
         echo [FAIL] The detected microphone could not be opened.
@@ -422,14 +448,13 @@ if "!SPEECH_CONFIGURED!"=="0" (
     )
 
     echo [ OK ] Microphone detected and verified.
-
     echo.
     echo ==========================================
     echo Configuring speech service...
     echo ==========================================
     echo.
 
-    set "SPEECH_CONFIG_FILE=%TEMP%\samaritan-speech-config.hpp"
+    set "SPEECH_CONFIG_FILE=%TEMP%\samaritan-speech-config-!RANDOM!.hpp"
     set "SPEECH_TEMPLATE=%LOCAL_BUILD%\speech-service\code\config\config.hpp"
 
     if not exist "!SPEECH_TEMPLATE!" (
@@ -438,24 +463,25 @@ if "!SPEECH_CONFIGURED!"=="0" (
         echo.
         echo Expected:
         echo !SPEECH_TEMPLATE!
+        del /q "!SPEECH_CONFIG_FILE!" >nul 2>&1
         exit /b 1
     )
 
     echo [INFO] Copying complete speech configuration template...
 
     copy /Y "!SPEECH_TEMPLATE!" "!SPEECH_CONFIG_FILE!" >nul
-
     if errorlevel 1 (
         echo.
         echo [FAIL] Failed to copy speech configuration template.
+        del /q "!SPEECH_CONFIG_FILE!" >nul 2>&1
         exit /b 1
     )
 
     echo [ OK ] Complete speech configuration template copied.
-
+    echo.
     echo [INFO] Applying machine-specific speech configuration...
 
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "$path = [System.IO.Path]::GetFullPath('!SPEECH_CONFIG_FILE!'); $content = [System.IO.File]::ReadAllText($path); $content = $content.Replace('{{ALSA_INPUT_NAME}}', '!MIC_NAME!').Replace('{{VOSK_MODEL_LOCATION}}', '/opt/samaritan/vosk-model-small-en-us-0.15'); [System.IO.File]::WriteAllText($path, $content)"
+    powershell -NoProfile -Command "$p=$env:SPEECH_CONFIG_FILE; $mic=$env:MIC_NAME; $text=[System.IO.File]::ReadAllText($p); $text=$text.Replace('{{ALSA_INPUT_NAME}}',$mic); $text=$text.Replace('{{VOSK_MODEL_LOCATION}}','/opt/samaritan/vosk-model-small-en-us-0.15'); [System.IO.File]::WriteAllText($p,$text)"
 
     if errorlevel 1 (
         echo.
@@ -465,11 +491,10 @@ if "!SPEECH_CONFIGURED!"=="0" (
     )
 
     echo [ OK ] Speech configuration values applied.
-
+    echo.
     echo [INFO] Uploading complete speech config.hpp...
 
     scp -P "%PI_PORT%" "!SPEECH_CONFIG_FILE!" "%PI_HOST%:/home/ubuntu/samaritan-speech-config.hpp"
-
     if errorlevel 1 (
         echo.
         echo [FAIL] Failed to upload speech config.hpp.
@@ -478,11 +503,10 @@ if "!SPEECH_CONFIGURED!"=="0" (
     )
 
     echo [ OK ] Speech config.hpp uploaded.
-
+    echo.
     echo [INFO] Installing speech config.hpp...
 
-    ssh -p "%PI_PORT%" "%PI_HOST%" "sudo mkdir -p %PI_WEB%/speech-service/code/config && sudo mv /home/ubuntu/samaritan-speech-config.hpp %PI_WEB%/speech-service/code/config/config.hpp"
-
+    ssh -p "%PI_PORT%" "%PI_HOST%" "sudo mkdir -p '%PI_WEB%/speech-service/code/config' && sudo mv '/home/ubuntu/samaritan-speech-config.hpp' '%PI_WEB%/speech-service/code/config/config.hpp'"
     if errorlevel 1 (
         echo.
         echo [FAIL] Failed to install speech config.hpp.
@@ -491,7 +515,6 @@ if "!SPEECH_CONFIGURED!"=="0" (
     )
 
     del /q "!SPEECH_CONFIG_FILE!" >nul 2>&1
-
     echo [ OK ] Complete speech config.hpp installed.
 )
 
@@ -501,8 +524,7 @@ echo Uploading Arduino firmware...
 echo ==========================================
 echo.
 
-ssh -p "%PI_PORT%" "%PI_HOST%" "sudo avrdude -p atmega328p -c arduino -P '!ARDUINO_SERIAL!' -b 115200 -D -U flash:w:%PI_WEB%/firmware/firmware.hex:i"
-
+ssh -p "%PI_PORT%" "%PI_HOST%" "sudo avrdude -p atmega328p -c arduino -P '!ARDUINO_SERIAL!' -b 115200 -D -U 'flash:w:%PI_WEB%/firmware/firmware.hex:i'"
 if errorlevel 1 (
     echo.
     echo [FAIL] Arduino firmware upload failed.
@@ -511,15 +533,13 @@ if errorlevel 1 (
 
 echo.
 echo [ OK ] Arduino firmware uploaded.
-
 echo.
 echo ==========================================
 echo Compiling C++ daemon...
 echo ==========================================
 echo.
 
-ssh -p "%PI_PORT%" "%PI_HOST%" "cd %PI_WEB%/daemon && sudo mkdir -p build && sudo g++ -std=c++17 code/main.cpp code/UnixSocket/UnixSocket.cpp code/ArduinoSerial/ArduinoSerial.cpp -o build/samaritan-daemon"
-
+ssh -p "%PI_PORT%" "%PI_HOST%" "cd '%PI_WEB%/daemon' && sudo mkdir -p build && sudo g++ -std=c++17 code/main.cpp code/UnixSocket/UnixSocket.cpp code/ArduinoSerial/ArduinoSerial.cpp -o build/samaritan-daemon"
 if errorlevel 1 (
     echo.
     echo [FAIL] C++ daemon compilation failed.
@@ -527,15 +547,13 @@ if errorlevel 1 (
 )
 
 echo [ OK ] C++ daemon compiled.
-
 echo.
 echo ==========================================
 echo Compiling speech recognition service...
 echo ==========================================
 echo.
 
-ssh -p "%PI_PORT%" "%PI_HOST%" "cd %PI_WEB%/speech-service && sudo mkdir -p build && sudo g++ -std=c++17 code/speech.cpp code/processTranscription.cpp -I/opt/samaritan/vosk-linux-aarch64-0.3.45 -L/opt/samaritan/vosk-linux-aarch64-0.3.45 -Wl,-rpath,/opt/samaritan/vosk-linux-aarch64-0.3.45 -lvosk -lasound -lcurl -pthread -o build/samaritan-speech-service"
-
+ssh -p "%PI_PORT%" "%PI_HOST%" "cd '%PI_WEB%/speech-service' && sudo mkdir -p build && sudo g++ -std=c++17 code/speech.cpp code/processTranscription.cpp -I/opt/samaritan/vosk-linux-aarch64-0.3.45 -L/opt/samaritan/vosk-linux-aarch64-0.3.45 -Wl,-rpath,/opt/samaritan/vosk-linux-aarch64-0.3.45 -lvosk -lasound -lcurl -pthread -o build/samaritan-speech-service"
 if errorlevel 1 (
     echo.
     echo [FAIL] Speech recognition service compilation failed.
@@ -543,7 +561,48 @@ if errorlevel 1 (
 )
 
 echo [ OK ] Speech recognition service compiled.
+echo.
+echo ==========================================
+echo Creating Samaritan Ollama model...
+echo ==========================================
+echo.
 
+ssh -p "%PI_PORT%" "%PI_HOST%" "ollama create samaritan -f '%PI_WEB%/ollama/Modelfile'"
+if errorlevel 1 (
+    echo.
+    echo [FAIL] Failed to create Samaritan Ollama model.
+    exit /b 1
+)
+
+echo [ OK ] Samaritan Ollama model created.
+echo.
+echo ==========================================
+echo Loading Samaritan Ollama model...
+echo ==========================================
+echo.
+
+ssh -p "%PI_PORT%" "%PI_HOST%" "sudo systemctl restart samaritan-model.service"
+if errorlevel 1 (
+    echo.
+    echo [FAIL] Failed to load Samaritan Ollama model.
+    exit /b 1
+)
+
+echo [ OK ] Samaritan Ollama model loaded.
+echo.
+echo [INFO] Verifying Samaritan Ollama model...
+
+ssh -p "%PI_PORT%" "%PI_HOST%" "ollama ps | grep -q '^samaritan'"
+if errorlevel 1 (
+    echo.
+    echo [FAIL] Samaritan model was not loaded into Ollama memory.
+    echo.
+    echo Current Ollama processes:
+    ssh -p "%PI_PORT%" "%PI_HOST%" "ollama ps"
+    exit /b 1
+)
+
+echo [ OK ] Samaritan Ollama model is loaded and ready.
 echo.
 echo ==========================================
 echo Restarting Samaritan daemon...
@@ -551,7 +610,6 @@ echo ==========================================
 echo.
 
 ssh -p "%PI_PORT%" "%PI_HOST%" "sudo systemctl restart samaritan-daemon"
-
 if errorlevel 1 (
     echo.
     echo [FAIL] Failed to restart Samaritan daemon.
@@ -559,7 +617,6 @@ if errorlevel 1 (
 )
 
 echo [ OK ] Samaritan daemon restarted.
-
 echo.
 echo ==========================================
 echo Restarting Samaritan speech service...
@@ -567,7 +624,6 @@ echo ==========================================
 echo.
 
 ssh -p "%PI_PORT%" "%PI_HOST%" "sudo systemctl restart samaritan-speech-service"
-
 if errorlevel 1 (
     echo.
     echo [FAIL] Failed to restart Samaritan speech service.
@@ -575,7 +631,6 @@ if errorlevel 1 (
 )
 
 echo [ OK ] Samaritan speech service restarted.
-
 echo.
 echo ==========================================
 echo Restarting Apache...
@@ -583,7 +638,6 @@ echo ==========================================
 echo.
 
 ssh -p "%PI_PORT%" "%PI_HOST%" "sudo systemctl restart apache2"
-
 if errorlevel 1 (
     echo.
     echo [FAIL] Failed to restart Apache.
@@ -591,13 +645,11 @@ if errorlevel 1 (
 )
 
 echo [ OK ] Apache restarted.
-
 echo.
 echo ==========================================
 echo Samaritan deployment complete.
 echo ==========================================
 echo.
-
 echo React application: deployed
 echo PHP backend: deployed
 echo Arduino firmware: uploaded
@@ -605,9 +657,9 @@ echo Arduino configuration: preserved/generated
 echo C++ daemon: compiled and restarted
 echo Speech service: compiled and restarted
 echo Speech configuration: preserved/generated
+echo Ollama model: created and loaded
+echo Ollama model service: installed and enabled
 echo Apache: restarted
-
 echo.
 
-endlocal
 exit /b 0
